@@ -19,6 +19,8 @@ def main() -> int:
 
     ragas_result = run_ragas_evaluation(documents_dir=Path("documents"))
     print(f"RAGAS report written to {ragas_result.report_path}")
+    for warning in ragas_result.warnings:
+        print(f"RAGAS warning: {warning}", file=sys.stderr)
     if ragas_result.threshold_failures:
         for failure in ragas_result.threshold_failures:
             print(f"RAGAS threshold failure: {failure}", file=sys.stderr)
