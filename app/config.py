@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     openai_embedding_model: str = "text-embedding-3-small"
     documents_dir: Path = BASE_DIR / "documents"
     vector_store_dir: Path = BASE_DIR / "data" / "chroma"
+    vector_store_collection: str = "policy_chunks"
 
     model_config = SettingsConfigDict(
         env_file=".env",
