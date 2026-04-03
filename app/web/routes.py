@@ -330,19 +330,13 @@ def _render_home_page() -> str:
         routingEl.innerHTML = '<div class="empty">No routed documents returned.</div>';
         return;
       }
-      const header = `
-        <div class="source-item">
-          <strong>${payload.routing_provider}</strong>
-          <div>${payload.routing_rationale || "No routing rationale returned."}</div>
-        </div>
-      `;
       const items = payload.routed_documents.map((document) => `
         <div class="source-item">
           <strong>${document.title}</strong>
           <div>${document.document_name}</div>
         </div>
       `).join("");
-      routingEl.innerHTML = header + items;
+      routingEl.innerHTML = items;
     }
 
     async function askQuestion() {
