@@ -18,6 +18,9 @@ It mimics a realistic workplace tool: a user asks natural-language questions abo
 - isolated RAG integration tests against the current fake PDF corpus
 - unit test coverage across ingestion, routing, retrieval, answering, and API behavior
 
+<img width="2559" height="1282" alt="image" src="https://github.com/user-attachments/assets/58c308ba-42a2-4bbb-a65f-69b92963fb0b" />
+
+
 ## Current Document Set
 
 Policy source documents currently live in [`documents/`](/home/zakye/policy-rag-assistant/documents):
@@ -381,6 +384,9 @@ The current integration cases cover:
 - lost company laptop incident reporting
 - password-sharing guidance
 - remote-work allowance rules
+
+<img width="896" height="1240" alt="image" src="https://github.com/user-attachments/assets/87aae80d-3682-437c-9f53-439e32068808" />
+
 
 ## Current Limitations
 
