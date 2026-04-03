@@ -54,29 +54,158 @@ Current setup includes:
 - Python project configuration in `pyproject.toml`
 - a minimal FastAPI app entrypoint in `app/`
 - environment-based configuration via `.env`
-- placeholder package structure for ingestion, retrieval, and web modules
+- an initial PDF extraction pipeline in `app/ingest/`
+- a small unit test suite in `tests/`
 
-The next implementation step is document ingestion, followed by chunking, embedding, retrieval, and a basic question-answering interface.
+The app is not yet a full RAG assistant. Retrieval, chunking, embeddings, and answer generation are still to be built. Right now the repository is in a good early state for local setup, manual smoke testing, and extraction testing.
 
 ## Initial Project Structure
 
 - `app/` application package
-- `app/ingest/` future PDF ingestion and indexing logic
+- `app/ingest/` PDF extraction logic and CLI entrypoint
 - `app/retrieval/` future retrieval and answer assembly logic
 - `app/web/` FastAPI routes
 - `documents/` source policy PDFs
 - `data/` local generated artifacts such as the vector store
+- `tests/` unit tests for the current scaffold and extraction layer
 
-## Local Setup
+## Quickstart
 
-1. Create a virtual environment.
-2. Install dependencies from [`pyproject.toml`](/home/zakye/policy-rag-assistant/pyproject.toml).
-3. Copy `.env.example` to `.env` and fill in `OPENAI_API_KEY`.
-4. Run the FastAPI app with `uvicorn app.main:app --reload`.
+### 1. Create and activate a virtual environment
 
-The current scaffold exposes:
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+If you are already using the environment and want to leave it later:
+
+```bash
+deactivate
+```
+
+### 2. Install the project
+
+With the virtual environment activated:
+
+```bash
+python -m pip install -e .
+```
+
+### 3. Configure environment variables
+
+Copy [`.env.example`](/home/zakye/policy-rag-assistant/.env.example) to `.env` and set your real `OPENAI_API_KEY`.
+
+Example:
+
+```bash
+cp .env.example .env
+```
+
+The current extraction and test steps do not require live OpenAI calls, but the key belongs in `.env` for the later RAG steps.
+
+## Current App Surface
+
+The current FastAPI scaffold exposes:
 
 - `GET /` for a basic setup status response
 - `GET /health` for a simple health check
+
+Run the app locally with:
+
+```bash
+uvicorn app.main:app --reload
+```
+
+Then test it manually:
+
+- open `http://127.0.0.1:8000/`
+- open `http://127.0.0.1:8000/health`
+
+Expected behavior:
+
+- `/` returns a small JSON payload describing the app status and configured document paths
+- `/health` returns a JSON health response such as `{"status":"ok","environment":"development"}`
+
+## PDF Extraction
+
+The repository now includes an initial extraction step for local policy PDFs.
+
+With the virtual environment activated, run:
+
+```bash
+policy-rag-extract
+```
+
+This command:
+
+- reads all `*.pdf` files from `documents/`
+- extracts text page by page
+- normalizes whitespace
+- preserves document name and page number metadata
+- writes the result to `data/extracted/documents.json`
+
+To inspect the generated extraction output:
+
+```bash
+sed -n '1,80p' data/extracted/documents.json
+```
+
+You can also override paths:
+
+```bash
+policy-rag-extract --documents-dir documents --output data/extracted/documents.json
+```
+
+## Manual Testing
+
+The smallest manual test loop right now is:
+
+1. Activate the virtual environment.
+2. Start the FastAPI app with `uvicorn app.main:app --reload`.
+3. Open `/` and `/health` in a browser or with `curl`.
+4. Run `policy-rag-extract`.
+5. Inspect `data/extracted/documents.json` to confirm document and page metadata were written.
+
+Example commands:
+
+```bash
+source .venv/bin/activate
+uvicorn app.main:app --reload
+```
+
+In another terminal:
+
+```bash
+source .venv/bin/activate
+curl http://127.0.0.1:8000/
+curl http://127.0.0.1:8000/health
+policy-rag-extract
+sed -n '1,80p' data/extracted/documents.json
+```
+
+## Unit Tests
+
+Run the current unit test suite with:
+
+```bash
+source .venv/bin/activate
+python -m unittest discover -s tests -v
+```
+
+The current tests cover:
+
+- app setup and route smoke behavior
+- whitespace normalization in extraction
+- extraction output serialization
+- real PDF extraction across the current `documents/` directory
+
+## Current Limitations
+
+- there is no chunking yet
+- there is no vector store indexing yet
+- there is no retrieval pipeline yet
+- there is no LLM answer generation yet
+- the web app is currently a scaffold, not the final user experience
 
 See [`plan.md`](/home/zakye/policy-rag-assistant/plan.md) for the proposed MVP scope and implementation plan.
