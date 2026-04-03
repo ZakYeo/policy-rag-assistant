@@ -19,6 +19,7 @@ It mimics a realistic workplace tool: a user asks natural-language questions abo
 - unit test coverage across ingestion, routing, retrieval, answering, and API behavior
 
 <img width="2559" height="1282" alt="image" src="https://github.com/user-attachments/assets/58c308ba-42a2-4bbb-a65f-69b92963fb0b" />
+<img width="1240" height="1148" alt="image" src="https://github.com/user-attachments/assets/3f95d0a2-0fa6-4d95-8f40-545f7a7110de" />
 
 
 ## Current Document Set
