@@ -4,17 +4,18 @@ A small demo project for an internal policy assistant powered by retrieval-augme
 
 The goal is to mimic a realistic workplace tool: a user asks natural-language questions about company policies, the system retrieves relevant passages from internal policy documents, and the LLM answers using that retrieved context instead of relying on general knowledge alone.
 
-## Project Goal
+## Capabilities And Features
 
-This repository is the starting point for a mini project that demonstrates a practical RAG workflow for internal documentation.
-
-The assistant should:
-
-- accept natural-language questions about company policies
-- retrieve relevant chunks from local policy documents
-- provide grounded answers based on retrieved content
-- make it clear when the answer comes from policy context
-- serve as a clean demo project rather than a production system
+- browser-based UI for asking policy questions
+- `POST /api/ask` JSON API for grounded answers
+- local PDF ingestion from the `documents/` directory
+- page-level extraction and chunk-level metadata capture
+- document routing before chunk retrieval
+- local Chroma vector indexing
+- selectable answer modes: `openai` and `extractive`
+- inline source references and surfaced retrieved chunks
+- backend-only handling of OpenAI credentials
+- unit test coverage across ingestion, routing, retrieval, answering, and API behavior
 
 ## Current Document Set
 
@@ -24,16 +25,17 @@ Policy source documents currently live in [`documents/`](/home/zakye/policy-rag-
 - `northstar-employee-handbook.pdf`
 - `northstar-information-security-policy.pdf`
 
-These files will be the initial knowledge base for retrieval and answering.
+These are intentionally fake sample PDFs created for the demo. They act as the project’s internal policy corpus for retrieval and answering.
 
-## Expected User Flow
+## User Flow
 
-At a high level, the application will work like this:
+The current application flow is:
 
 1. A user asks a question such as "Can I use public AI tools with company data?"
-2. The system searches the indexed policy documents for relevant passages.
-3. The most relevant chunks are supplied to the LLM as context.
-4. The LLM answers using that context and, ideally, cites or references the source material.
+2. The backend routes the question to the most relevant policy document or documents.
+3. Chunk retrieval runs only against those routed documents.
+4. The selected answer mode generates a grounded response from the retrieved chunks.
+5. The UI shows the answer, routed documents, sources, and retrieved chunk context.
 
 ## Non-Goals For The First Iteration
 
@@ -313,5 +315,3 @@ The current tests cover:
 - there is no conversation memory yet
 - there is no authentication or multi-user support yet
 - document updates still require manual re-indexing
-
-See [`plan.md`](/home/zakye/policy-rag-assistant/plan.md) for the proposed MVP scope and implementation plan.
