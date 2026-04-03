@@ -1,9 +1,11 @@
 import os
 import unittest
 
+from fastapi import HTTPException
 from app.assistant import AssistantService
 from app.config import get_settings
 from app.main import create_app
+from app.retrieval.answerer import AnswerProviderError
 from fastapi.responses import HTMLResponse
 
 from app.web.routes import ask_question, root, status
@@ -14,13 +16,18 @@ class FakeAssistantService(AssistantService):
     def __init__(self) -> None:
         pass
 
-    def answer_question(self, question: str, top_k: int | None = None):
+    def answer_question(
+        self,
+        question: str,
+        top_k: int | None = None,
+        answer_provider: str | None = None,
+    ):
         return type(
             "AssistantResponse",
             (),
             {
                 "answer": "Mock answer",
-                "answer_provider": "extractive",
+                "answer_provider": answer_provider or "extractive",
                 "sources": [
                     {
                         "document_name": "policy.pdf",
@@ -40,6 +47,21 @@ class FakeAssistantService(AssistantService):
                 ],
             },
         )()
+
+
+class ErrorAssistantService(AssistantService):
+    def __init__(self) -> None:
+        pass
+
+    def answer_question(
+        self,
+        question: str,
+        top_k: int | None = None,
+        answer_provider: str | None = None,
+    ):
+        raise AnswerProviderError(
+            "OpenAI answering is selected but OPENAI_API_KEY is not configured on the backend."
+        )
 
 
 class AppSmokeTests(unittest.TestCase):
@@ -68,6 +90,8 @@ class AppSmokeTests(unittest.TestCase):
         body = response.body.decode("utf-8")
         self.assertIn("Policy RAG Assistant", body)
         self.assertIn("Ask Policy Assistant", body)
+        self.assertIn("Answer mode", body)
+        self.assertIn('option value="openai" selected', body)
 
     def test_status_returns_setup_paths(self) -> None:
         payload = status()
@@ -78,9 +102,21 @@ class AppSmokeTests(unittest.TestCase):
         self.assertTrue(payload["vector_store_dir"].endswith("data/chroma"))
 
     def test_ask_endpoint_returns_answer_payload(self) -> None:
-        response = ask_question(AskRequest(question="What is the rule?"), assistant=FakeAssistantService())
+        response = ask_question(
+            AskRequest(question="What is the rule?", answer_provider="openai"),
+            assistant=FakeAssistantService(),
+        )
 
         self.assertEqual(response.answer, "Mock answer")
-        self.assertEqual(response.answer_provider, "extractive")
+        self.assertEqual(response.answer_provider, "openai")
         self.assertEqual(response.sources[0].document_name, "policy.pdf")
         self.assertEqual(response.retrieved_chunks[0].chunk_id, "chunk-1")
+
+    def test_ask_endpoint_returns_provider_error(self) -> None:
+        with self.assertRaises(HTTPException) as exc_info:
+            ask_question(
+                AskRequest(question="What is the rule?", answer_provider="openai"),
+                assistant=ErrorAssistantService(),
+            )
+        self.assertEqual(exc_info.exception.status_code, 503)
+        self.assertIn("OPENAI_API_KEY", exc_info.exception.detail)

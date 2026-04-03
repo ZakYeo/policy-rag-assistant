@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from app.config import get_settings
-from app.retrieval.answerer import AnswerResult, build_default_answerer
+from app.retrieval.answerer import AnswerProviderError, build_default_answerer
 from app.retrieval.retriever import RetrievedChunk, build_default_retriever
 
 
@@ -16,11 +16,16 @@ class AssistantResponse:
 
 
 class AssistantService:
-    def __init__(self, retriever=None, answerer=None) -> None:
+    def __init__(self, retriever=None, answerers: dict[str, object] | None = None) -> None:
         self._retriever = retriever or build_default_retriever()
-        self._answerer = answerer or build_default_answerer()
+        self._answerers = answerers or {}
 
-    def answer_question(self, question: str, top_k: int | None = None) -> AssistantResponse:
+    def answer_question(
+        self,
+        question: str,
+        top_k: int | None = None,
+        answer_provider: str | None = None,
+    ) -> AssistantResponse:
         clean_question = question.strip()
         if not clean_question:
             raise ValueError("Question must not be empty")
@@ -28,7 +33,12 @@ class AssistantService:
         settings = get_settings()
         retrieval_limit = top_k or settings.retrieval_top_k
         chunks = self._retriever.retrieve(clean_question, top_k=retrieval_limit)
-        answer_result = self._answerer.answer(clean_question, chunks)
+        selected_provider = answer_provider or settings.answer_provider
+        answerer = self._answerers.get(selected_provider)
+        if answerer is None:
+            answerer = build_default_answerer(selected_provider)
+
+        answer_result = answerer.answer(clean_question, chunks)
         return AssistantResponse(
             answer=answer_result.answer,
             answer_provider=answer_result.provider,

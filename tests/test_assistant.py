@@ -24,6 +24,9 @@ class FakeRetriever:
 
 
 class FakeAnswerer:
+    def __init__(self, provider: str = "extractive") -> None:
+        self.provider = provider
+
     def answer(self, question: str, chunks):
         self.last_question = question
         self.last_chunks = chunks
@@ -32,7 +35,7 @@ class FakeAnswerer:
             (),
             {
                 "answer": "Test answer",
-                "provider": "extractive",
+                "provider": self.provider,
                 "sources": [
                     type(
                         "Source",
@@ -52,9 +55,9 @@ class AssistantServiceTests(unittest.TestCase):
     def test_answer_question_returns_serialized_response(self) -> None:
         retriever = FakeRetriever()
         answerer = FakeAnswerer()
-        service = AssistantService(retriever=retriever, answerer=answerer)
+        service = AssistantService(retriever=retriever, answerers={"extractive": answerer})
 
-        response = service.answer_question("What is the rule?", top_k=2)
+        response = service.answer_question("What is the rule?", top_k=2, answer_provider="extractive")
 
         self.assertEqual(response.answer, "Test answer")
         self.assertEqual(response.answer_provider, "extractive")
@@ -63,7 +66,27 @@ class AssistantServiceTests(unittest.TestCase):
         self.assertEqual(retriever.last_top_k, 2)
 
     def test_answer_question_rejects_blank_input(self) -> None:
-        service = AssistantService(retriever=FakeRetriever(), answerer=FakeAnswerer())
+        service = AssistantService(
+            retriever=FakeRetriever(),
+            answerers={"extractive": FakeAnswerer()},
+        )
 
         with self.assertRaises(ValueError):
             service.answer_question("   ")
+
+    def test_answer_question_uses_requested_provider(self) -> None:
+        retriever = FakeRetriever()
+        extractive_answerer = FakeAnswerer(provider="extractive")
+        openai_answerer = FakeAnswerer(provider="openai")
+        service = AssistantService(
+            retriever=retriever,
+            answerers={
+                "extractive": extractive_answerer,
+                "openai": openai_answerer,
+            },
+        )
+
+        response = service.answer_question("What is the rule?", answer_provider="openai")
+
+        self.assertEqual(response.answer_provider, "openai")
+        self.assertEqual(openai_answerer.last_question, "What is the rule?")

@@ -106,7 +106,7 @@ Example:
 cp .env.example .env
 ```
 
-The default MVP path does not require live OpenAI calls because embeddings default to a local provider and answers default to an extractive grounded response. You can switch to OpenAI-backed embeddings or answer generation later through environment variables.
+The default MVP answer mode is now `openai`, while embeddings still default to the local provider. That means the browser UI will try to use OpenAI for answer generation unless you switch it to `extractive`. You can control both behaviors through environment variables.
 
 ## Current App Surface
 
@@ -132,8 +132,22 @@ Then test it manually:
 Expected behavior:
 
 - `/` shows a browser-based policy assistant UI
+- the UI includes an `Answer mode` toggle with `OpenAI` selected by default
 - `/api/status` returns JSON describing the app status and configured paths
 - `/health` returns a JSON health response such as `{"status":"ok","environment":"development"}`
+
+### UI Answer Mode Toggle
+
+The browser UI lets you choose between two answer modes:
+
+- `OpenAI`: sends the retrieved chunks to the backend OpenAI chat provider for a more natural response
+- `Extractive`: returns a grounded extractive answer built directly from the retrieved chunks without calling OpenAI
+
+Important notes:
+
+- the API key stays on the backend only and is never exposed to the frontend
+- the frontend sends only the selected answer mode, never any secret
+- if `OpenAI` is selected but the backend is missing `OPENAI_API_KEY`, lacks network access, or hits provider errors, the UI shows the backend error message instead of silently failing
 
 ## PDF Extraction
 
@@ -209,8 +223,10 @@ This command:
 Notes:
 
 - the default prototype mode uses `EMBEDDING_PROVIDER=local`
+- the default answer mode uses `ANSWER_PROVIDER=openai`
 - set `EMBEDDING_PROVIDER=openai` to use the configured OpenAI embedding model
-- OpenAI mode requires a valid `OPENAI_API_KEY` and network access
+- set `ANSWER_PROVIDER=extractive` if you want non-LLM answers by default
+- OpenAI answering requires a valid `OPENAI_API_KEY` and network access
 - `--reset` clears the current collection before re-indexing
 
 ## Manual Testing
@@ -222,7 +238,7 @@ The smallest manual test loop right now is:
 3. Run `policy-rag-extract`.
 4. Run `policy-rag-chunk`.
 5. Run `policy-rag-index --reset` once to build the local index.
-6. Open `/` in a browser and ask a policy question.
+6. Open `/` in a browser, keep `OpenAI` selected or switch to `Extractive`, and ask a policy question.
 7. Check `/api/status` and `/health`.
 8. Optionally hit `POST /api/ask` directly.
 9. Inspect the generated JSON artifacts and local vector store to confirm indexing completed.
@@ -243,7 +259,10 @@ curl http://127.0.0.1:8000/api/status
 curl http://127.0.0.1:8000/health
 curl -X POST http://127.0.0.1:8000/api/ask \
   -H 'content-type: application/json' \
-  -d '{"question":"Can I put customer data into a public AI tool?"}'
+  -d '{"question":"Can I put customer data into a public AI tool?","answer_provider":"openai"}'
+curl -X POST http://127.0.0.1:8000/api/ask \
+  -H 'content-type: application/json' \
+  -d '{"question":"Can I put customer data into a public AI tool?","answer_provider":"extractive"}'
 policy-rag-extract
 sed -n '1,80p' data/extracted/documents.json
 policy-rag-chunk
@@ -270,10 +289,12 @@ The current tests cover:
 - Chroma indexing, metadata persistence, and reset behavior
 - retrieval ranking and metadata return
 - grounded answer generation with source metadata
+- backend error handling for answer-provider failures
 
 ## Current Limitations
 
-- the default local answer mode is extractive and less fluent than an LLM-backed answer
+- OpenAI is the default answer mode, so missing backend API configuration will surface as an explicit UI/API error until you configure it or switch to `extractive`
+- the extractive fallback is grounded but less fluent than an LLM-backed answer
 - the browser UI is intentionally simple and built for demo use
 - there is no conversation memory yet
 - there is no authentication or multi-user support yet

@@ -24,6 +24,10 @@ class AnswerResult:
     provider: str
 
 
+class AnswerProviderError(RuntimeError):
+    """Raised when the selected answer provider cannot answer the request."""
+
+
 class ExtractiveAnswerer:
     def answer(self, question: str, chunks: list[RetrievedChunk]) -> AnswerResult:
         if not chunks:
@@ -116,7 +120,9 @@ class ExtractiveAnswerer:
 class OpenAIAnswerer:
     def __init__(self, api_key: str, model: str) -> None:
         if not api_key:
-            raise ValueError("OPENAI_API_KEY is required for OpenAI answer generation")
+            raise AnswerProviderError(
+                "OpenAI answering is selected but OPENAI_API_KEY is not configured on the backend."
+            )
 
         from openai import OpenAI
 
@@ -140,24 +146,30 @@ class OpenAIAnswerer:
                 for chunk in chunks
             ]
         )
-        response = self._client.chat.completions.create(
-            model=self._model,
-            temperature=0,
-            messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "You are a policy assistant. Answer only from the provided context. "
-                        "If the context is insufficient, say so clearly. Cite sources inline "
-                        "using the provided document names and page numbers."
-                    ),
-                },
-                {
-                    "role": "user",
-                    "content": f"Question: {question}\n\nContext:\n{context}",
-                },
-            ],
-        )
+        try:
+            response = self._client.chat.completions.create(
+                model=self._model,
+                temperature=0,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": (
+                            "You are a policy assistant. Answer only from the provided context. "
+                            "If the context is insufficient, say so clearly. Cite sources inline "
+                            "using the provided document names and page numbers."
+                        ),
+                    },
+                    {
+                        "role": "user",
+                        "content": f"Question: {question}\n\nContext:\n{context}",
+                    },
+                ],
+            )
+        except Exception as exc:
+            raise AnswerProviderError(
+                "The OpenAI answer provider failed. Check backend configuration, API key, "
+                "network access, or account quota."
+            ) from exc
         answer_text = response.choices[0].message.content or ""
         sources = [
             AnswerSource(
@@ -170,17 +182,18 @@ class OpenAIAnswerer:
         return AnswerResult(answer=answer_text, sources=sources, provider="openai")
 
 
-def build_default_answerer() -> ExtractiveAnswerer | OpenAIAnswerer:
+def build_default_answerer(provider: str | None = None) -> ExtractiveAnswerer | OpenAIAnswerer:
     settings = get_settings()
-    if settings.answer_provider == "extractive":
+    selected_provider = provider or settings.answer_provider
+    if selected_provider == "extractive":
         return ExtractiveAnswerer()
-    if settings.answer_provider == "openai":
+    if selected_provider == "openai":
         return OpenAIAnswerer(
             api_key=settings.openai_api_key,
             model=settings.openai_chat_model,
         )
 
-    raise ValueError(
-        f"Unsupported answer provider: {settings.answer_provider}. "
+    raise AnswerProviderError(
+        f"Unsupported answer provider: {selected_provider}. "
         "Expected 'extractive' or 'openai'."
     )

@@ -1,10 +1,20 @@
+import os
 import unittest
 
-from app.retrieval.answerer import ExtractiveAnswerer
+from app.config import get_settings
+from app.retrieval.answerer import AnswerProviderError, ExtractiveAnswerer, build_default_answerer
 from app.retrieval.retriever import RetrievedChunk
 
 
 class AnswererTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.original_env = os.environ.copy()
+
+    def tearDown(self) -> None:
+        os.environ.clear()
+        os.environ.update(self.original_env)
+        get_settings.cache_clear()
+
     def test_answer_returns_grounded_extract(self) -> None:
         answerer = ExtractiveAnswerer()
         chunks = [
@@ -62,3 +72,11 @@ class AnswererTests(unittest.TestCase):
         self.assertEqual(len(result.sources), 1)
         self.assertEqual(result.sources[0].document_name, "northstar-information-security-policy.pdf")
         self.assertEqual(result.sources[0].page_number, 2)
+
+    def test_build_default_answerer_errors_when_openai_key_is_missing(self) -> None:
+        os.environ["ANSWER_PROVIDER"] = "openai"
+        os.environ["OPENAI_API_KEY"] = ""
+        get_settings.cache_clear()
+
+        with self.assertRaises(AnswerProviderError):
+            build_default_answerer()

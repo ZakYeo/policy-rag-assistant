@@ -1,9 +1,12 @@
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
 
 class AskRequest(BaseModel):
     question: str = Field(min_length=1, description="Natural-language question about company policy.")
     top_k: int | None = Field(default=None, ge=1, le=10)
+    answer_provider: Literal["openai", "extractive"] | None = None
 
 
 class SourceResponse(BaseModel):

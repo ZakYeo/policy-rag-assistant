@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     openai_api_key: str = ""
     openai_chat_model: str = "gpt-4.1-mini"
     openai_embedding_model: str = "text-embedding-3-small"
-    answer_provider: str = "extractive"
+    answer_provider: str = "openai"
     embedding_provider: str = "local"
     documents_dir: Path = BASE_DIR / "documents"
     vector_store_dir: Path = BASE_DIR / "data" / "chroma"

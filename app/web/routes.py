@@ -3,6 +3,7 @@ from fastapi.responses import HTMLResponse
 
 from app.assistant import AssistantService, build_default_assistant_service
 from app.config import get_settings
+from app.retrieval.answerer import AnswerProviderError
 from app.web.schemas import AskRequest, AskResponse
 
 
@@ -35,9 +36,15 @@ def ask_question(
     assistant: AssistantService = Depends(get_assistant_service),
 ) -> AskResponse:
     try:
-        response = assistant.answer_question(request.question, top_k=request.top_k)
+        response = assistant.answer_question(
+            request.question,
+            top_k=request.top_k,
+            answer_provider=request.answer_provider,
+        )
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except AnswerProviderError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
 
     return AskResponse(
         answer=response.answer,
@@ -243,6 +250,13 @@ def _render_home_page() -> str:
         <h2>Question</h2>
         <p>Try questions about AI use, security handling, attendance, remote work, or confidentiality.</p>
         <textarea id="question">Can I put customer data into a public AI tool?</textarea>
+        <div style="margin-top: 14px;">
+          <label for="answer-provider" style="display:block; margin-bottom: 8px; color: var(--muted);">Answer mode</label>
+          <select id="answer-provider" style="width: 100%; border-radius: 14px; border: 1px solid rgba(28, 27, 24, 0.15); padding: 12px; font: inherit; background: rgba(255,255,255,0.72);">
+            <option value="openai" selected>OpenAI</option>
+            <option value="extractive">Extractive</option>
+          </select>
+        </div>
         <button id="ask-button">Ask Policy Assistant</button>
       </div>
 
@@ -269,6 +283,7 @@ def _render_home_page() -> str:
   <script>
     const button = document.getElementById("ask-button");
     const questionInput = document.getElementById("question");
+    const answerProviderInput = document.getElementById("answer-provider");
     const answerEl = document.getElementById("answer");
     const metaEl = document.getElementById("meta");
     const sourcesEl = document.getElementById("sources");
@@ -303,6 +318,7 @@ def _render_home_page() -> str:
 
     async function askQuestion() {
       const question = questionInput.value.trim();
+      const answerProvider = answerProviderInput.value;
       if (!question) {
         answerEl.textContent = "Enter a question first.";
         return;
@@ -316,7 +332,7 @@ def _render_home_page() -> str:
         const response = await fetch("/api/ask", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ question }),
+          body: JSON.stringify({ question, answer_provider: answerProvider }),
         });
         const payload = await response.json();
 
