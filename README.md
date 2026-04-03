@@ -2,7 +2,7 @@
 
 A small demo project for an internal policy assistant powered by retrieval-augmented generation (RAG).
 
-The goal is to mimic a realistic workplace tool: a user asks natural-language questions about company policies, the system retrieves relevant passages from internal policy documents, and the LLM answers using that retrieved context instead of relying on general knowledge alone.
+It mimics a realistic workplace tool: a user asks natural-language questions about company policies, the system retrieves relevant passages from internal policy documents, and the answer is generated from that retrieved context instead of relying on general knowledge alone.
 
 ## Capabilities And Features
 
@@ -15,6 +15,7 @@ The goal is to mimic a realistic workplace tool: a user asks natural-language qu
 - selectable answer modes: `openai` and `extractive`
 - inline source references and surfaced retrieved chunks
 - backend-only handling of OpenAI credentials
+- isolated RAG integration tests against the current fake PDF corpus
 - unit test coverage across ingestion, routing, retrieval, answering, and API behavior
 
 ## Current Document Set
@@ -62,6 +63,7 @@ Current setup includes:
 - document routing that can choose relevant PDFs before chunk retrieval
 - retrieval and grounded answer generation services
 - a small unit test suite in `tests/`
+- a separate RAG integration test suite in `integration_tests/`
 
 The app is now a working MVP prototype. It can ingest the local policy PDFs, build a local vector index, route each question to the most relevant documents, retrieve matching chunks, and return grounded answers through both a JSON API and a simple browser UI.
 
@@ -74,6 +76,8 @@ The app is now a working MVP prototype. It can ingest the local policy PDFs, bui
 - `app/web/` FastAPI routes
 - `documents/` source policy PDFs
 - `data/` local generated artifacts such as the vector store
+- `integration_tests/` end-to-end RAG tests for the current sample corpus
+- `scripts/` repo-local test runner commands
 - `tests/` unit tests for ingestion, retrieval, API behavior, and answer generation
 
 ## Quickstart
@@ -96,7 +100,7 @@ deactivate
 With the virtual environment activated:
 
 ```bash
-python -m pip install -e .
+python3 -m pip install -e .
 ```
 
 ### 3. Configure environment variables
@@ -286,14 +290,16 @@ sed -n '1,120p' data/chunks/chunks.json
 
 ## Unit Tests
 
-Run the current unit test suite with:
+The regular unit test suite covers the internal building blocks of the app and runs separately from the RAG integration suite.
+
+Run it with:
 
 ```bash
 source .venv/bin/activate
-python -m unittest discover -s tests -v
+python3 -m unittest discover -s tests -v
 ```
 
-The current tests cover:
+The current unit tests cover:
 
 - app setup and route smoke behavior
 - assistant orchestration and API response shaping
@@ -306,6 +312,40 @@ The current tests cover:
 - document routing and router fallback behavior
 - grounded answer generation with source metadata
 - backend error handling for answer-provider failures
+
+## RAG Integration Tests
+
+The integration suite validates the actual MVP RAG pipeline against the current sample PDFs.
+
+Each run:
+
+- extracts the PDFs from `documents/`
+- chunks the extracted text
+- embeds and indexes the chunks into a temporary local Chroma store
+- runs sample policy questions through routing, retrieval, and extractive answering
+- checks the returned answers and routed documents against expected outcomes for this corpus
+
+The test workspace is isolated per run and uses a temporary directory, so it does not mutate the main app data under `data/`.
+
+Run the integration suite with the repo-local command:
+
+```bash
+./scripts/run_rag_integration_tests.sh
+```
+
+If you have installed the project entrypoints into your virtual environment, you can also run:
+
+```bash
+policy-rag-integration-tests
+```
+
+The current integration cases cover:
+
+- prohibited public-AI use with customer data
+- employee core working hours
+- lost company laptop incident reporting
+- password-sharing guidance
+- remote-work allowance rules
 
 ## Current Limitations
 
