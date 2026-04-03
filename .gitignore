@@ -9,3 +9,4 @@ __pycache__/
 data/extracted/
 data/chunks/
 data/chroma/
+data/rag-test-reports/

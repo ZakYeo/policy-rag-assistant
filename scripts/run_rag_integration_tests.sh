@@ -10,4 +10,4 @@ else
   exit 1
 fi
 
-"${PYTHON_BIN}" -m unittest discover -s integration_tests -v
+"${PYTHON_BIN}" -m app.evals.cli
