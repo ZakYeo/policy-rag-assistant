@@ -20,6 +20,7 @@ dependencies = [
 
 [project.scripts]
 policy-rag-chunk = "app.ingest.chunk_cli:main"
+policy-rag-integration-tests = "app.evals.cli:main"
 policy-rag-extract = "app.ingest.cli:main"
 policy-rag-index = "app.ingest.index_cli:main"
 
@@ -29,8 +30,8 @@ dev = [
     "ruff>=0.11.0",
 ]
 
-[tool.setuptools]
-packages = ["app"]
+[tool.setuptools.packages.find]
+include = ["app*"]
 
 [tool.ruff]
 line-length = 100

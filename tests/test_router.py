@@ -29,6 +29,13 @@ class RouterTests(unittest.TestCase):
 
         self.assertIn("northstar-information-security-policy", result.document_ids)
 
+    def test_heuristic_router_picks_security_policy_for_lost_laptop(self) -> None:
+        router = HeuristicDocumentRouter()
+
+        result = router.route("How do I report a lost company laptop?", POLICY_DOCUMENTS)
+
+        self.assertIn("northstar-information-security-policy", result.document_ids)
+
     def test_build_default_router_falls_back_to_heuristic_without_key(self) -> None:
         os.environ["ROUTER_PROVIDER"] = "openai"
         os.environ["OPENAI_API_KEY"] = ""
