@@ -55,14 +55,15 @@ Current setup includes:
 - a minimal FastAPI app entrypoint in `app/`
 - environment-based configuration via `.env`
 - an initial PDF extraction pipeline in `app/ingest/`
+- a chunking step that produces chunk-level metadata for later retrieval
 - a small unit test suite in `tests/`
 
-The app is not yet a full RAG assistant. Retrieval, chunking, embeddings, and answer generation are still to be built. Right now the repository is in a good early state for local setup, manual smoke testing, and extraction testing.
+The app is not yet a full RAG assistant. Retrieval, embeddings, and answer generation are still to be built. Right now the repository is in a good early state for local setup, manual smoke testing, extraction testing, and chunk generation.
 
 ## Initial Project Structure
 
 - `app/` application package
-- `app/ingest/` PDF extraction logic and CLI entrypoint
+- `app/ingest/` PDF extraction and chunking logic plus CLI entrypoints
 - `app/retrieval/` future retrieval and answer assembly logic
 - `app/web/` FastAPI routes
 - `documents/` source policy PDFs
@@ -157,6 +158,30 @@ You can also override paths:
 policy-rag-extract --documents-dir documents --output data/extracted/documents.json
 ```
 
+## Chunking
+
+The repository now includes a chunking step built on top of the extracted page text.
+
+With the virtual environment activated, run:
+
+```bash
+policy-rag-chunk
+```
+
+This command:
+
+- reads the local PDFs from `documents/`
+- extracts text page by page
+- splits each page into overlapping chunks
+- preserves chunk metadata including document name, page number, chunk index, and character offsets
+- writes the result to `data/chunks/chunks.json`
+
+You can adjust chunking parameters:
+
+```bash
+policy-rag-chunk --chunk-size 900 --chunk-overlap 150
+```
+
 ## Manual Testing
 
 The smallest manual test loop right now is:
@@ -165,7 +190,8 @@ The smallest manual test loop right now is:
 2. Start the FastAPI app with `uvicorn app.main:app --reload`.
 3. Open `/` and `/health` in a browser or with `curl`.
 4. Run `policy-rag-extract`.
-5. Inspect `data/extracted/documents.json` to confirm document and page metadata were written.
+5. Run `policy-rag-chunk`.
+6. Inspect the generated JSON artifacts to confirm page and chunk metadata were written.
 
 Example commands:
 
@@ -182,6 +208,8 @@ curl http://127.0.0.1:8000/
 curl http://127.0.0.1:8000/health
 policy-rag-extract
 sed -n '1,80p' data/extracted/documents.json
+policy-rag-chunk
+sed -n '1,120p' data/chunks/chunks.json
 ```
 
 ## Unit Tests
@@ -199,10 +227,10 @@ The current tests cover:
 - whitespace normalization in extraction
 - extraction output serialization
 - real PDF extraction across the current `documents/` directory
+- chunk generation and chunk metadata capture
 
 ## Current Limitations
 
-- there is no chunking yet
 - there is no vector store indexing yet
 - there is no retrieval pipeline yet
 - there is no LLM answer generation yet

@@ -19,6 +19,7 @@ dependencies = [
 ]
 
 [project.scripts]
+policy-rag-chunk = "app.ingest.chunk_cli:main"
 policy-rag-extract = "app.ingest.cli:main"
 
 [project.optional-dependencies]
