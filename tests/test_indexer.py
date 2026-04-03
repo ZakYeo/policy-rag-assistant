@@ -6,7 +6,7 @@ import chromadb
 
 from app.ingest.chunker import Chunk, chunk_documents
 from app.ingest.extractor import extract_all_documents
-from app.ingest.indexer import ChunkIndexer
+from app.ingest.indexer import ChunkIndexer, LocalHashEmbedder
 
 
 class FakeEmbedder:
@@ -15,6 +15,17 @@ class FakeEmbedder:
 
 
 class IndexerTests(unittest.TestCase):
+    def test_local_hash_embedder_is_deterministic(self) -> None:
+        embedder = LocalHashEmbedder(dimensions=32)
+
+        first = embedder.embed_texts(["same text"])[0]
+        second = embedder.embed_texts(["same text"])[0]
+        different = embedder.embed_texts(["different text"])[0]
+
+        self.assertEqual(len(first), 32)
+        self.assertEqual(first, second)
+        self.assertNotEqual(first, different)
+
     def test_upsert_chunks_persists_records(self) -> None:
         documents = extract_all_documents(Path("documents"))
         chunks = chunk_documents(documents, chunk_size=500, chunk_overlap=50)
@@ -89,3 +100,20 @@ class IndexerTests(unittest.TestCase):
         self.assertEqual(result["documents"][0], "sample chunk")
         self.assertEqual(result["metadatas"][0]["document_name"], "doc-1.pdf")
         self.assertEqual(result["metadatas"][0]["page_number"], 1)
+
+    def test_reset_clears_indexed_records(self) -> None:
+        documents = extract_all_documents(Path("documents"))
+        chunks = chunk_documents(documents, chunk_size=500, chunk_overlap=50)
+        client = chromadb.EphemeralClient()
+        collection = client.get_or_create_collection(name="test_chunks")
+        indexer = ChunkIndexer(
+            persist_dir=Path("."),
+            collection_name="test_chunks",
+            embedder=FakeEmbedder(),
+            collection=collection,
+        )
+
+        indexer.upsert_chunks(chunks)
+        indexer.reset()
+
+        self.assertEqual(indexer.count(), 0)

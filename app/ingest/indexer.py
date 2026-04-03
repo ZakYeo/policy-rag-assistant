@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import hashlib
+import math
 from pathlib import Path
 from typing import Protocol
 
@@ -33,6 +35,29 @@ class OpenAIEmbedder:
         return [item.embedding for item in response.data]
 
 
+class LocalHashEmbedder:
+    def __init__(self, dimensions: int = 256) -> None:
+        self._dimensions = dimensions
+
+    def embed_texts(self, texts: list[str]) -> list[list[float]]:
+        return [self._embed_text(text) for text in texts]
+
+    def _embed_text(self, text: str) -> list[float]:
+        vector = [0.0] * self._dimensions
+        tokens = text.lower().split()
+        for token in tokens:
+            digest = hashlib.sha256(token.encode("utf-8")).digest()
+            index = int.from_bytes(digest[:4], "big") % self._dimensions
+            sign = 1.0 if digest[4] % 2 == 0 else -1.0
+            weight = 1.0 + (digest[5] / 255.0)
+            vector[index] += sign * weight
+
+        norm = math.sqrt(sum(value * value for value in vector))
+        if norm == 0:
+            return vector
+        return [value / norm for value in vector]
+
+
 class ChunkIndexer:
     def __init__(
         self,
@@ -44,10 +69,13 @@ class ChunkIndexer:
         self._embedder = embedder
         if collection is not None:
             self._collection = collection
+            self._client = None
+            self._collection_name = collection.name
             return
 
-        client = chromadb.PersistentClient(path=str(persist_dir))
-        self._collection = client.get_or_create_collection(name=collection_name)
+        self._client = chromadb.PersistentClient(path=str(persist_dir))
+        self._collection_name = collection_name
+        self._collection = self._client.get_or_create_collection(name=collection_name)
 
     def upsert_chunks(self, chunks: list[Chunk]) -> int:
         if not chunks:
@@ -78,14 +106,37 @@ class ChunkIndexer:
     def count(self) -> int:
         return self._collection.count()
 
+    def reset(self) -> None:
+        if self._client is None:
+            existing = self._collection.get(include=[])
+            if existing["ids"]:
+                self._collection.delete(ids=existing["ids"])
+            return
+
+        try:
+            self._client.delete_collection(name=self._collection_name)
+        except Exception:
+            pass
+        self._collection = self._client.get_or_create_collection(name=self._collection_name)
+
 
 def build_default_indexer() -> ChunkIndexer:
     settings = get_settings()
+    if settings.embedding_provider == "openai":
+        embedder: Embedder = OpenAIEmbedder(
+            api_key=settings.openai_api_key,
+            model=settings.openai_embedding_model,
+        )
+    elif settings.embedding_provider == "local":
+        embedder = LocalHashEmbedder()
+    else:
+        raise ValueError(
+            f"Unsupported embedding provider: {settings.embedding_provider}. "
+            "Expected 'local' or 'openai'."
+        )
+
     return ChunkIndexer(
         persist_dir=settings.vector_store_dir,
         collection_name=settings.vector_store_collection,
-        embedder=OpenAIEmbedder(
-            api_key=settings.openai_api_key,
-            model=settings.openai_embedding_model,
-        ),
+        embedder=embedder,
     )

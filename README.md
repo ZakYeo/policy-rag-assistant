@@ -182,6 +182,30 @@ You can adjust chunking parameters:
 policy-rag-chunk --chunk-size 900 --chunk-overlap 150
 ```
 
+## Indexing
+
+The repository now includes a local indexing command that writes chunk embeddings to Chroma.
+
+With the virtual environment activated, run:
+
+```bash
+policy-rag-index --reset
+```
+
+This command:
+
+- reads the local PDFs from `documents/`
+- extracts and chunks the source text
+- creates embeddings using the configured embedding provider
+- upserts chunk records into the local Chroma store at `data/chroma/`
+
+Notes:
+
+- the default prototype mode uses `EMBEDDING_PROVIDER=local`
+- set `EMBEDDING_PROVIDER=openai` to use the configured OpenAI embedding model
+- OpenAI mode requires a valid `OPENAI_API_KEY` and network access
+- `--reset` clears the current collection before re-indexing
+
 ## Manual Testing
 
 The smallest manual test loop right now is:
@@ -191,7 +215,8 @@ The smallest manual test loop right now is:
 3. Open `/` and `/health` in a browser or with `curl`.
 4. Run `policy-rag-extract`.
 5. Run `policy-rag-chunk`.
-6. Inspect the generated JSON artifacts to confirm page and chunk metadata were written.
+6. Run `policy-rag-index --reset`.
+7. Inspect the generated JSON artifacts and local vector store to confirm indexing completed.
 
 Example commands:
 
@@ -210,6 +235,7 @@ policy-rag-extract
 sed -n '1,80p' data/extracted/documents.json
 policy-rag-chunk
 sed -n '1,120p' data/chunks/chunks.json
+policy-rag-index --reset
 ```
 
 ## Unit Tests
@@ -228,10 +254,10 @@ The current tests cover:
 - extraction output serialization
 - real PDF extraction across the current `documents/` directory
 - chunk generation and chunk metadata capture
+- Chroma indexing, metadata persistence, and reset behavior
 
 ## Current Limitations
 
-- there is no vector store indexing yet
 - there is no retrieval pipeline yet
 - there is no LLM answer generation yet
 - the web app is currently a scaffold, not the final user experience
