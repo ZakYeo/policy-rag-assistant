@@ -103,6 +103,12 @@ With the virtual environment activated:
 python3 -m pip install -e .
 ```
 
+If you want to run the full test toolchain, including the RAGAS-based integration evaluation:
+
+```bash
+python3 -m pip install -e ".[dev]"
+```
+
 ### 3. Configure environment variables
 
 Copy [`.env.example`](/home/zakye/policy-rag-assistant/.env.example) to `.env` and set your real `OPENAI_API_KEY`.
@@ -315,7 +321,7 @@ The current unit tests cover:
 
 ## RAG Integration Tests
 
-The integration suite validates the actual MVP RAG pipeline against the current sample PDFs.
+The integration suite validates the actual MVP RAG pipeline against the current sample PDFs and produces a timestamped JSON report for each run.
 
 Each run:
 
@@ -324,6 +330,7 @@ Each run:
 - embeds and indexes the chunks into a temporary local Chroma store
 - runs sample policy questions through routing, retrieval, and extractive answering
 - checks the returned answers and routed documents against expected outcomes for this corpus
+- scores the run with RAGAS metrics and compares the summary values to thresholds
 
 The test workspace is isolated per run and uses a temporary directory, so it does not mutate the main app data under `data/`.
 
@@ -338,6 +345,34 @@ If you have installed the project entrypoints into your virtual environment, you
 ```bash
 policy-rag-integration-tests
 ```
+
+By default, the command runs:
+
+- the end-to-end integration tests in `integration_tests/`
+- deterministic RAGAS retrieval metrics:
+- `id_based_context_precision`
+- `id_based_context_recall`
+- `nonllm_context_precision`
+- `nonllm_context_recall`
+
+Each run writes a report to `data/rag-test-reports/` using the format:
+
+```text
+rag-test-run-YYYYMMDD-HHMMSS.json
+```
+
+If you want to include the OpenAI-backed RAGAS answer-quality metrics as well, enable them explicitly:
+
+```bash
+RAGAS_ENABLE_LLM_METRICS=1 ./scripts/run_rag_integration_tests.sh
+```
+
+When enabled, the report also includes:
+
+- `faithfulness`
+- `answer_relevancy`
+
+This opt-in mode requires a valid backend `OPENAI_API_KEY` and network access. The default integration command keeps those LLM metrics disabled so the suite remains fast and runnable in offline environments.
 
 The current integration cases cover:
 
