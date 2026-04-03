@@ -52,23 +52,26 @@ This repository now has the initial project scaffold in place.
 Current setup includes:
 
 - Python project configuration in `pyproject.toml`
-- a minimal FastAPI app entrypoint in `app/`
+- a FastAPI app with both API and browser entrypoints
 - environment-based configuration via `.env`
 - an initial PDF extraction pipeline in `app/ingest/`
 - a chunking step that produces chunk-level metadata for later retrieval
+- local Chroma indexing with configurable embedding providers
+- retrieval and grounded answer generation services
 - a small unit test suite in `tests/`
 
-The app is not yet a full RAG assistant. Retrieval, embeddings, and answer generation are still to be built. Right now the repository is in a good early state for local setup, manual smoke testing, extraction testing, and chunk generation.
+The app is now a working MVP prototype. It can ingest the local policy PDFs, build a local vector index, retrieve matching chunks, and return grounded answers through both a JSON API and a simple browser UI.
 
 ## Initial Project Structure
 
 - `app/` application package
-- `app/ingest/` PDF extraction and chunking logic plus CLI entrypoints
-- `app/retrieval/` future retrieval and answer assembly logic
+- `app/ingest/` extraction, chunking, and indexing CLI logic
+- `app/retrieval/` embedding, retrieval, and answer generation logic
+- `app/assistant.py` orchestration service for end-to-end question answering
 - `app/web/` FastAPI routes
 - `documents/` source policy PDFs
 - `data/` local generated artifacts such as the vector store
-- `tests/` unit tests for the current scaffold and extraction layer
+- `tests/` unit tests for ingestion, retrieval, API behavior, and answer generation
 
 ## Quickstart
 
@@ -103,13 +106,15 @@ Example:
 cp .env.example .env
 ```
 
-The current extraction and test steps do not require live OpenAI calls, but the key belongs in `.env` for the later RAG steps.
+The default MVP path does not require live OpenAI calls because embeddings default to a local provider and answers default to an extractive grounded response. You can switch to OpenAI-backed embeddings or answer generation later through environment variables.
 
 ## Current App Surface
 
-The current FastAPI scaffold exposes:
+The current FastAPI app exposes:
 
-- `GET /` for a basic setup status response
+- `GET /` for the browser demo UI
+- `GET /api/status` for basic app status and paths
+- `POST /api/ask` for the grounded question-answer API
 - `GET /health` for a simple health check
 
 Run the app locally with:
@@ -121,11 +126,13 @@ uvicorn app.main:app --reload
 Then test it manually:
 
 - open `http://127.0.0.1:8000/`
+- open `http://127.0.0.1:8000/api/status`
 - open `http://127.0.0.1:8000/health`
 
 Expected behavior:
 
-- `/` returns a small JSON payload describing the app status and configured document paths
+- `/` shows a browser-based policy assistant UI
+- `/api/status` returns JSON describing the app status and configured paths
 - `/health` returns a JSON health response such as `{"status":"ok","environment":"development"}`
 
 ## PDF Extraction
@@ -212,11 +219,13 @@ The smallest manual test loop right now is:
 
 1. Activate the virtual environment.
 2. Start the FastAPI app with `uvicorn app.main:app --reload`.
-3. Open `/` and `/health` in a browser or with `curl`.
-4. Run `policy-rag-extract`.
-5. Run `policy-rag-chunk`.
-6. Run `policy-rag-index --reset`.
-7. Inspect the generated JSON artifacts and local vector store to confirm indexing completed.
+3. Run `policy-rag-extract`.
+4. Run `policy-rag-chunk`.
+5. Run `policy-rag-index --reset` once to build the local index.
+6. Open `/` in a browser and ask a policy question.
+7. Check `/api/status` and `/health`.
+8. Optionally hit `POST /api/ask` directly.
+9. Inspect the generated JSON artifacts and local vector store to confirm indexing completed.
 
 Example commands:
 
@@ -229,13 +238,16 @@ In another terminal:
 
 ```bash
 source .venv/bin/activate
-curl http://127.0.0.1:8000/
+policy-rag-index --reset
+curl http://127.0.0.1:8000/api/status
 curl http://127.0.0.1:8000/health
+curl -X POST http://127.0.0.1:8000/api/ask \
+  -H 'content-type: application/json' \
+  -d '{"question":"Can I put customer data into a public AI tool?"}'
 policy-rag-extract
 sed -n '1,80p' data/extracted/documents.json
 policy-rag-chunk
 sed -n '1,120p' data/chunks/chunks.json
-policy-rag-index --reset
 ```
 
 ## Unit Tests
@@ -250,16 +262,21 @@ python -m unittest discover -s tests -v
 The current tests cover:
 
 - app setup and route smoke behavior
+- assistant orchestration and API response shaping
 - whitespace normalization in extraction
 - extraction output serialization
 - real PDF extraction across the current `documents/` directory
 - chunk generation and chunk metadata capture
 - Chroma indexing, metadata persistence, and reset behavior
+- retrieval ranking and metadata return
+- grounded answer generation with source metadata
 
 ## Current Limitations
 
-- there is no retrieval pipeline yet
-- there is no LLM answer generation yet
-- the web app is currently a scaffold, not the final user experience
+- the default local answer mode is extractive and less fluent than an LLM-backed answer
+- the browser UI is intentionally simple and built for demo use
+- there is no conversation memory yet
+- there is no authentication or multi-user support yet
+- document updates still require manual re-indexing
 
 See [`plan.md`](/home/zakye/policy-rag-assistant/plan.md) for the proposed MVP scope and implementation plan.
