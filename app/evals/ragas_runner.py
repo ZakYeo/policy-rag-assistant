@@ -49,6 +49,10 @@ class RagasRunResult:
         return not self.threshold_failures
 
 
+def write_report_payload(report_path: Path, payload: dict[str, object]) -> None:
+    report_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+
+
 def build_report_path(output_dir: Path, run_started_at: datetime) -> Path:
     timestamp = run_started_at.strftime("%Y%m%d-%H%M%S")
     return output_dir / f"rag-test-run-{timestamp}.json"
@@ -78,6 +82,22 @@ def run_ragas_evaluation(
     run_started_at = datetime.now().astimezone()
     report_dir = output_dir or DEFAULT_REPORTS_DIR
     report_dir.mkdir(parents=True, exist_ok=True)
+    report_path = build_report_path(report_dir, run_started_at)
+    report_payload: dict[str, object] = {
+        "run_started_at": run_started_at.isoformat(),
+        "documents_dir": str(documents_dir),
+        "report_version": 1,
+        "status": "running",
+        "metrics": [],
+        "summary_thresholds": SUMMARY_THRESHOLDS,
+        "llm_summary_thresholds": {},
+        "summary_metrics": {},
+        "passed": False,
+        "threshold_failures": [],
+        "warnings": [],
+        "cases": [],
+    }
+    write_report_payload(report_path, report_payload)
 
     harness = RagIntegrationHarness(documents_dir)
     try:
@@ -111,6 +131,8 @@ def run_ragas_evaluation(
                 f"LLM-backed RAGAS metrics were skipped. Set {ENABLE_LLM_METRICS_ENV}=1 "
                 "to enable them."
             )
+        report_payload["warnings"] = warnings
+        write_report_payload(report_path, report_payload)
         case_reports: list[dict[str, object]] = []
 
         for case in RAG_EVAL_CASES:
@@ -171,6 +193,9 @@ def run_ragas_evaluation(
                     "metric_errors": llm_metric_errors,
                 }
             )
+            report_payload["cases"] = case_reports
+            report_payload["metrics"] = list(metrics.keys()) + list(llm_metrics.keys())
+            write_report_payload(report_path, report_payload)
 
         summary_metrics = {
             metric_name: sum(
@@ -198,26 +223,35 @@ def run_ragas_evaluation(
             if metric_name in summary_metrics
         }
         threshold_failures.extend(check_summary_thresholds(summary_metrics, llm_summary_thresholds))
-        report_payload = {
-            "run_started_at": run_started_at.isoformat(),
-            "documents_dir": str(documents_dir),
-            "report_version": 1,
-            "metrics": list(summary_metrics.keys()),
-            "summary_thresholds": SUMMARY_THRESHOLDS,
-            "llm_summary_thresholds": llm_summary_thresholds,
-            "summary_metrics": summary_metrics,
-            "passed": not threshold_failures,
-            "threshold_failures": threshold_failures,
-            "warnings": warnings,
-            "cases": case_reports,
-        }
-        report_path = build_report_path(report_dir, run_started_at)
-        report_path.write_text(json.dumps(report_payload, indent=2), encoding="utf-8")
+        report_payload.update(
+            {
+                "status": "completed",
+                "metrics": list(summary_metrics.keys()),
+                "summary_thresholds": SUMMARY_THRESHOLDS,
+                "llm_summary_thresholds": llm_summary_thresholds,
+                "summary_metrics": summary_metrics,
+                "passed": not threshold_failures,
+                "threshold_failures": threshold_failures,
+                "warnings": warnings,
+                "cases": case_reports,
+            }
+        )
+        write_report_payload(report_path, report_payload)
         return RagasRunResult(
             report_path=report_path,
             report_payload=report_payload,
             threshold_failures=threshold_failures,
             warnings=warnings,
         )
+    except Exception as exc:
+        report_payload.update(
+            {
+                "status": "failed",
+                "passed": False,
+                "error": str(exc),
+            }
+        )
+        write_report_payload(report_path, report_payload)
+        raise
     finally:
         harness.close()

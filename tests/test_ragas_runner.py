@@ -3,8 +3,13 @@ from __future__ import annotations
 import unittest
 from datetime import datetime, timezone
 from pathlib import Path
+from tempfile import TemporaryDirectory
 
-from app.evals.ragas_runner import build_report_path, check_summary_thresholds
+from app.evals.ragas_runner import (
+    build_report_path,
+    check_summary_thresholds,
+    write_report_payload,
+)
 
 
 class RagasRunnerTests(unittest.TestCase):
@@ -35,3 +40,19 @@ class RagasRunnerTests(unittest.TestCase):
             failures,
             ["id_based_context_precision=0.7500 below threshold 0.8000"],
         )
+
+    def test_write_report_payload_serializes_json_file(self) -> None:
+        with TemporaryDirectory() as tempdir:
+            report_path = Path(tempdir) / "rag-test-run-20260403-123456.json"
+
+            write_report_payload(
+                report_path,
+                {
+                    "status": "running",
+                    "cases": [{"case_id": "example"}],
+                },
+            )
+
+            content = report_path.read_text(encoding="utf-8")
+            self.assertIn('"status": "running"', content)
+            self.assertIn('"case_id": "example"', content)
