@@ -4,7 +4,9 @@ import unittest
 from app.assistant import AssistantService
 from app.config import get_settings
 from app.main import create_app
-from app.web.routes import ask_question
+from fastapi.responses import HTMLResponse
+
+from app.web.routes import ask_question, root, status
 from app.web.schemas import AskRequest
 
 
@@ -60,13 +62,18 @@ class AppSmokeTests(unittest.TestCase):
         self.assertEqual(payload, {"status": "ok", "environment": "test"})
 
     def test_root_returns_setup_status(self) -> None:
-        app = create_app()
-        root_route = next(route for route in app.routes if route.path == "/")
+        response = root()
 
-        payload = root_route.endpoint()
+        self.assertIsInstance(response, HTMLResponse)
+        body = response.body.decode("utf-8")
+        self.assertIn("Policy RAG Assistant", body)
+        self.assertIn("Ask Policy Assistant", body)
+
+    def test_status_returns_setup_paths(self) -> None:
+        payload = status()
 
         self.assertEqual(payload["name"], "Policy RAG Assistant")
-        self.assertEqual(payload["status"], "setup-complete")
+        self.assertEqual(payload["status"], "ready")
         self.assertTrue(payload["documents_dir"].endswith("documents"))
         self.assertTrue(payload["vector_store_dir"].endswith("data/chroma"))
 
