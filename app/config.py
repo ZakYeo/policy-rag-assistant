@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     openai_embedding_model: str = "text-embedding-3-small"
     answer_provider: str = "openai"
     embedding_provider: str = "local"
+    router_provider: str = "openai"
     documents_dir: Path = BASE_DIR / "documents"
     vector_store_dir: Path = BASE_DIR / "data" / "chroma"
     vector_store_collection: str = "policy_chunks"
