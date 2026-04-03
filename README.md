@@ -57,16 +57,17 @@ Current setup includes:
 - an initial PDF extraction pipeline in `app/ingest/`
 - a chunking step that produces chunk-level metadata for later retrieval
 - local Chroma indexing with configurable embedding providers
+- document routing that can choose relevant PDFs before chunk retrieval
 - retrieval and grounded answer generation services
 - a small unit test suite in `tests/`
 
-The app is now a working MVP prototype. It can ingest the local policy PDFs, build a local vector index, retrieve matching chunks, and return grounded answers through both a JSON API and a simple browser UI.
+The app is now a working MVP prototype. It can ingest the local policy PDFs, build a local vector index, route each question to the most relevant documents, retrieve matching chunks, and return grounded answers through both a JSON API and a simple browser UI.
 
 ## Initial Project Structure
 
 - `app/` application package
 - `app/ingest/` extraction, chunking, and indexing CLI logic
-- `app/retrieval/` embedding, retrieval, and answer generation logic
+- `app/retrieval/` document catalog, routing, embedding, retrieval, and answer generation logic
 - `app/assistant.py` orchestration service for end-to-end question answering
 - `app/web/` FastAPI routes
 - `documents/` source policy PDFs
@@ -148,6 +149,18 @@ Important notes:
 - the API key stays on the backend only and is never exposed to the frontend
 - the frontend sends only the selected answer mode, never any secret
 - if `OpenAI` is selected but the backend is missing `OPENAI_API_KEY`, lacks network access, or hits provider errors, the UI shows the backend error message instead of silently failing
+
+## Document Routing
+
+Before chunk retrieval runs, the backend now performs a document-routing step to decide which policy PDFs are relevant to the user’s question.
+
+Current behavior:
+
+- the router can use OpenAI to choose the most relevant documents from the policy catalog
+- if OpenAI routing is unavailable, the backend falls back to a heuristic router
+- chunk retrieval then runs only against the routed documents instead of the full corpus
+
+This keeps retrieval narrower and more intentional, especially as the document set grows.
 
 ## PDF Extraction
 
@@ -288,6 +301,7 @@ The current tests cover:
 - chunk generation and chunk metadata capture
 - Chroma indexing, metadata persistence, and reset behavior
 - retrieval ranking and metadata return
+- document routing and router fallback behavior
 - grounded answer generation with source metadata
 - backend error handling for answer-provider failures
 

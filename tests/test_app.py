@@ -28,6 +28,15 @@ class FakeAssistantService(AssistantService):
             {
                 "answer": "Mock answer",
                 "answer_provider": answer_provider or "extractive",
+                "routed_documents": [
+                    {
+                        "document_id": "northstar-ai-acceptable-use-policy",
+                        "document_name": "northstar-ai-acceptable-use-policy.pdf",
+                        "title": "AI Acceptable Use Policy",
+                    }
+                ],
+                "routing_provider": "heuristic",
+                "routing_rationale": "AI keyword match",
                 "sources": [
                     {
                         "document_name": "policy.pdf",
@@ -109,6 +118,8 @@ class AppSmokeTests(unittest.TestCase):
 
         self.assertEqual(response.answer, "Mock answer")
         self.assertEqual(response.answer_provider, "openai")
+        self.assertEqual(response.routing_provider, "heuristic")
+        self.assertEqual(response.routed_documents[0].document_id, "northstar-ai-acceptable-use-policy")
         self.assertEqual(response.sources[0].document_name, "policy.pdf")
         self.assertEqual(response.retrieved_chunks[0].chunk_id, "chunk-1")
 

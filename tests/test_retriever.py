@@ -122,3 +122,53 @@ class RetrieverTests(unittest.TestCase):
         self.assertTrue(results[0].document_name.endswith(".pdf"))
         self.assertGreaterEqual(results[0].page_number, 1)
         self.assertTrue(results[0].text)
+
+    def test_retrieve_filtered_limits_results_to_selected_documents(self) -> None:
+        client = chromadb.EphemeralClient()
+        collection = client.get_or_create_collection(
+            name="test_chunks_filtering",
+            metadata={"hnsw:space": "cosine"},
+        )
+        indexer = ChunkIndexer(
+            persist_dir=Path("."),
+            collection_name="test_chunks_filtering",
+            embedder=KeywordEmbedder(),
+            collection=collection,
+        )
+        retriever = ChunkRetriever(
+            persist_dir=Path("."),
+            collection_name="test_chunks_filtering",
+            embedder=KeywordEmbedder(),
+            collection=collection,
+        )
+        indexer.upsert_chunks(
+            [
+                Chunk(
+                    chunk_id="alpha-1",
+                    document_id="alpha",
+                    document_name="alpha.pdf",
+                    source_path="documents/alpha.pdf",
+                    page_number=1,
+                    chunk_index=0,
+                    char_start=0,
+                    char_end=12,
+                    text="alpha policy guidance",
+                ),
+                Chunk(
+                    chunk_id="beta-1",
+                    document_id="beta",
+                    document_name="beta.pdf",
+                    source_path="documents/beta.pdf",
+                    page_number=1,
+                    chunk_index=0,
+                    char_start=0,
+                    char_end=12,
+                    text="beta policy guidance",
+                ),
+            ]
+        )
+
+        results = retriever.retrieve_filtered("beta question", top_k=2, document_ids=["alpha"])
+
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0].document_id, "alpha")

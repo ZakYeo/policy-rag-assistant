@@ -15,6 +15,12 @@ class SourceResponse(BaseModel):
     chunk_id: str
 
 
+class RoutedDocumentResponse(BaseModel):
+    document_id: str
+    document_name: str
+    title: str
+
+
 class RetrievedChunkResponse(BaseModel):
     chunk_id: str
     document_name: str
@@ -27,5 +33,8 @@ class RetrievedChunkResponse(BaseModel):
 class AskResponse(BaseModel):
     answer: str
     answer_provider: str
+    routed_documents: list[RoutedDocumentResponse]
+    routing_provider: str
+    routing_rationale: str
     sources: list[SourceResponse]
     retrieved_chunks: list[RetrievedChunkResponse]

@@ -44,15 +44,30 @@ class ChunkRetriever:
         )
 
     def retrieve(self, query: str, top_k: int) -> list[RetrievedChunk]:
+        return self.retrieve_filtered(query=query, top_k=top_k, document_ids=None)
+
+    def retrieve_filtered(
+        self,
+        query: str,
+        top_k: int,
+        document_ids: list[str] | None,
+    ) -> list[RetrievedChunk]:
         query = query.strip()
         if not query:
             return []
 
         query_embedding = self._embedder.embed_texts([query])[0]
+        where = None
+        if document_ids:
+            if len(document_ids) == 1:
+                where = {"document_id": document_ids[0]}
+            else:
+                where = {"document_id": {"$in": document_ids}}
         result = self._collection.query(
             query_embeddings=[query_embedding],
             n_results=top_k,
             include=["documents", "metadatas", "distances"],
+            where=where,
         )
 
         retrieved_chunks: list[RetrievedChunk] = []

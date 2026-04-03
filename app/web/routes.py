@@ -49,6 +49,9 @@ def ask_question(
     return AskResponse(
         answer=response.answer,
         answer_provider=response.answer_provider,
+        routed_documents=response.routed_documents,
+        routing_provider=response.routing_provider,
+        routing_rationale=response.routing_rationale,
         sources=response.sources,
         retrieved_chunks=response.retrieved_chunks,
     )
@@ -274,6 +277,11 @@ def _render_home_page() -> str:
       </div>
 
       <div class="panel">
+        <h2>Routed Documents</h2>
+        <div id="routing" class="stack"><div class="empty">No routing decision yet.</div></div>
+      </div>
+
+      <div class="panel">
         <h2>Retrieved Chunks</h2>
         <div id="chunks" class="stack"><div class="empty">No retrieved chunks yet.</div></div>
       </div>
@@ -287,6 +295,7 @@ def _render_home_page() -> str:
     const answerEl = document.getElementById("answer");
     const metaEl = document.getElementById("meta");
     const sourcesEl = document.getElementById("sources");
+    const routingEl = document.getElementById("routing");
     const chunksEl = document.getElementById("chunks");
 
     function renderSources(sources) {
@@ -316,6 +325,26 @@ def _render_home_page() -> str:
       `).join("");
     }
 
+    function renderRouting(payload) {
+      if (!payload.routed_documents.length) {
+        routingEl.innerHTML = '<div class="empty">No routed documents returned.</div>';
+        return;
+      }
+      const header = `
+        <div class="source-item">
+          <strong>${payload.routing_provider}</strong>
+          <div>${payload.routing_rationale || "No routing rationale returned."}</div>
+        </div>
+      `;
+      const items = payload.routed_documents.map((document) => `
+        <div class="source-item">
+          <strong>${document.title}</strong>
+          <div>${document.document_name}</div>
+        </div>
+      `).join("");
+      routingEl.innerHTML = header + items;
+    }
+
     async function askQuestion() {
       const question = questionInput.value.trim();
       const answerProvider = answerProviderInput.value;
@@ -339,6 +368,7 @@ def _render_home_page() -> str:
         if (!response.ok) {
           answerEl.textContent = payload.detail || "Request failed.";
           renderSources([]);
+          renderRouting({ routed_documents: [], routing_provider: "", routing_rationale: "" });
           renderChunks([]);
           return;
         }
@@ -346,11 +376,13 @@ def _render_home_page() -> str:
         answerEl.textContent = payload.answer;
         metaEl.textContent = `Provider: ${payload.answer_provider} · Sources: ${payload.sources.length} · Chunks: ${payload.retrieved_chunks.length}`;
         renderSources(payload.sources);
+        renderRouting(payload);
         renderChunks(payload.retrieved_chunks);
       } catch (error) {
         answerEl.textContent = "The request failed before the assistant could answer.";
         metaEl.textContent = String(error);
         renderSources([]);
+        renderRouting({ routed_documents: [], routing_provider: "", routing_rationale: "" });
         renderChunks([]);
       } finally {
         button.disabled = false;
