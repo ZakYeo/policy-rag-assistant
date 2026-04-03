@@ -1,8 +1,43 @@
 import os
 import unittest
 
+from app.assistant import AssistantService
 from app.config import get_settings
 from app.main import create_app
+from app.web.routes import ask_question
+from app.web.schemas import AskRequest
+
+
+class FakeAssistantService(AssistantService):
+    def __init__(self) -> None:
+        pass
+
+    def answer_question(self, question: str, top_k: int | None = None):
+        return type(
+            "AssistantResponse",
+            (),
+            {
+                "answer": "Mock answer",
+                "answer_provider": "extractive",
+                "sources": [
+                    {
+                        "document_name": "policy.pdf",
+                        "page_number": 1,
+                        "chunk_id": "chunk-1",
+                    }
+                ],
+                "retrieved_chunks": [
+                    {
+                        "chunk_id": "chunk-1",
+                        "document_name": "policy.pdf",
+                        "page_number": 1,
+                        "chunk_index": 0,
+                        "distance": 0.1,
+                        "text": "policy text",
+                    }
+                ],
+            },
+        )()
 
 
 class AppSmokeTests(unittest.TestCase):
@@ -34,3 +69,11 @@ class AppSmokeTests(unittest.TestCase):
         self.assertEqual(payload["status"], "setup-complete")
         self.assertTrue(payload["documents_dir"].endswith("documents"))
         self.assertTrue(payload["vector_store_dir"].endswith("data/chroma"))
+
+    def test_ask_endpoint_returns_answer_payload(self) -> None:
+        response = ask_question(AskRequest(question="What is the rule?"), assistant=FakeAssistantService())
+
+        self.assertEqual(response.answer, "Mock answer")
+        self.assertEqual(response.answer_provider, "extractive")
+        self.assertEqual(response.sources[0].document_name, "policy.pdf")
+        self.assertEqual(response.retrieved_chunks[0].chunk_id, "chunk-1")
