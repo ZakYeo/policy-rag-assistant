@@ -6,7 +6,8 @@ import chromadb
 
 from app.ingest.chunker import Chunk, chunk_documents
 from app.ingest.extractor import extract_all_documents
-from app.ingest.indexer import ChunkIndexer, LocalHashEmbedder
+from app.ingest.indexer import ChunkIndexer
+from app.retrieval.embeddings import LocalHashEmbedder
 
 
 class FakeEmbedder:

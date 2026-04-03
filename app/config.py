@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     documents_dir: Path = BASE_DIR / "documents"
     vector_store_dir: Path = BASE_DIR / "data" / "chroma"
     vector_store_collection: str = "policy_chunks"
+    retrieval_top_k: int = 4
 
     model_config = SettingsConfigDict(
         env_file=".env",
