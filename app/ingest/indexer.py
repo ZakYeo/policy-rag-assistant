@@ -60,6 +60,13 @@ class ChunkIndexer:
         )
         return len(chunks)
 
+    def prune_revisions(self, active_revisions: set[str]) -> None:
+        records = self._collection.get(include=['metadatas'])
+        obsolete = [chunk_id for chunk_id, metadata in zip(records['ids'], records['metadatas'])
+                    if metadata.get('revision') not in active_revisions]
+        for offset in range(0, len(obsolete), 1000):
+            self._collection.delete(ids=obsolete[offset:offset + 1000])
+
     def delete_document(self, document_id: str) -> None:
         self._collection.delete(where={"document_id": document_id})
 

@@ -59,3 +59,17 @@ class PolicyApiTests(unittest.TestCase):
         self.assertIn('attachment', original.headers['content-disposition'])
         self.assertEqual(self.client.request('DELETE', url, json={'version': policy['version']}).status_code, 200)
         self.assertEqual(self.client.get(url).status_code, 404)
+
+    def test_preview_apply_and_settings_validation(self):
+        policy = self.library.store.list()[0]
+        url = f"/api/policies/{policy['id']}"
+        settings = {**policy['settings'], 'strategy': 'sentences', 'size': 200, 'overlap': 20}
+        response = self.client.post(url + '/previews', json={'settings': settings, 'version': policy['version']})
+        self.assertEqual(response.status_code, 200)
+        preview = response.json()
+        self.assertEqual(self.client.get(url).json()['revision'], policy['revision'])
+        response = self.client.post(url + '/apply', json={'preview_id': preview['id'], 'version': policy['version']})
+        self.assertEqual(response.status_code, 202)
+        self.assertEqual(self.client.get(url).json()['settings'], settings)
+        self.assertEqual(self.client.post(url + '/previews', json={'settings': {**settings, 'overlap': 200}, 'version': 2}).status_code, 400)
+        self.assertEqual(self.client.post(url + '/previews', json={'settings': {**settings, 'strategy': 'html'}, 'version': 2}).status_code, 400)

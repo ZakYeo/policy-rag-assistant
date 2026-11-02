@@ -21,7 +21,7 @@ function reducer(state: DeskState, action: Action): DeskState {
   }
 }
 
-export function usePolicyDesk(client: PolicyClient, focusEditor = focusQuestionEditor): DeskViewModel {
+export function usePolicyDesk(client: PolicyClient, focusEditor = focusQuestionEditor, availablePolicyIds?: string[]): DeskViewModel {
   const [state, dispatch] = useReducer(reducer, initialState);
   const pending = useRef<AbortController | null>(null);
   useEffect(() => () => { pending.current?.abort(); pending.current = null; }, []);
@@ -55,7 +55,7 @@ export function usePolicyDesk(client: PolicyClient, focusEditor = focusQuestionE
     }
   }
   return {
-    sampleQuestionGroups,
+    sampleQuestionGroups: availablePolicyIds ? sampleQuestionGroups.map((group) => ({ ...group, questions: group.questions.filter((question) => question.policyIds.every((id) => availablePolicyIds.includes(id))) })).filter((group) => group.questions.length) : sampleQuestionGroups,
     selectSampleQuestion(id) {
       const sample = sampleQuestionGroups.flatMap((group) => group.questions).find((question) => question.id === id);
       if (!sample) return;

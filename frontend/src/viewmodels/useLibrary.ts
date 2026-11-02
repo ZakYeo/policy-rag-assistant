@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import type { ChunkPage, LibraryClient, LibraryViewModel, ManagedPolicy, PolicyDetail, PolicyOperation } from '../contracts/library';
+import type { ChunkPage, LibraryClient, LibraryViewModel, ManagedPolicy, PolicyDetail, PolicyOperation, ChunkSettings, ChunkPreview } from '../contracts/library';
 
 export function useLibrary(client: LibraryClient): LibraryViewModel {
   const [policies, setPolicies] = useState<ManagedPolicy[]>([]);
@@ -9,6 +9,8 @@ export function useLibrary(client: LibraryClient): LibraryViewModel {
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<LibraryViewModel['tab']>('content');
   const selection = useRef(0);
+  const [settings, setDraftSettings] = useState<ChunkSettings | null>(null);
+  const [preview, setPreview] = useState<ChunkPreview | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [operation, setOperation] = useState<PolicyOperation | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -23,10 +25,10 @@ export function useLibrary(client: LibraryClient): LibraryViewModel {
   useEffect(() => { void refresh(); }, [client]); // eslint-disable-line react-hooks/exhaustive-deps
   async function select(id: string) {
     const request = ++selection.current;
-    setLoading(true); setError(null); setDetail(null); setChunks(null); setTab('content'); setConfirmDelete(false);
+    setLoading(true); setError(null); setDetail(null); setChunks(null); setPreview(null); setTab('content'); setConfirmDelete(false);
     try {
       const [next, page] = await Promise.all([client.detail(id), client.chunks(id, 0)]);
-      if (request === selection.current) { setDetail(next); setTitle(next.title); setChunks(page); }
+      if (request === selection.current) { setDetail(next); setTitle(next.title); setDraftSettings(next.settings); setChunks(page); }
     } catch (reason) { if (request === selection.current) setError(reason instanceof Error ? reason.message : 'Unable to open policy.'); }
     finally { if (request === selection.current) setLoading(false); }
   }
@@ -79,5 +81,26 @@ export function useLibrary(client: LibraryClient): LibraryViewModel {
     try { setOperation(await client.retry(detail.id, detail.version)); }
     catch (reason) { setBusy(false); setError(reason instanceof Error ? reason.message : 'Unable to retry processing.'); }
   }
-  return { file, setFile, upload, retry, operation, confirmDelete, setConfirmDelete, deletePolicy, title, setTitle, rename, busy, policies, detail, chunks, loading, error, tab, refresh, select, setTab, loadChunks };
+  function setSettings(value: ChunkSettings) { setDraftSettings(value); setPreview(null); }
+  async function previewChunks() {
+    if (!detail || !settings || busy) return;
+    setBusy(true); setError(null); setPreview(null);
+    try { setPreview(await client.preview(detail.id, settings, detail.version)); }
+    catch (reason) { setError(reason instanceof Error ? reason.message : 'Unable to preview chunks.'); }
+    finally { setBusy(false); }
+  }
+  async function loadPreview(offset: number) {
+    if (!detail || !preview || busy) return;
+    setBusy(true); setError(null);
+    try { const chunks = await client.previewChunks(detail.id, preview.id, offset); setPreview({ ...preview, chunks }); }
+    catch (reason) { setError(reason instanceof Error ? reason.message : 'Unable to load preview chunks.'); }
+    finally { setBusy(false); }
+  }
+  async function applyPreview() {
+    if (!detail || !preview || busy) return;
+    setBusy(true); setError(null);
+    try { setOperation(await client.apply(detail.id, preview.id, detail.version)); }
+    catch (reason) { setBusy(false); setPreview(null); setError(reason instanceof Error ? reason.message : 'Unable to apply chunking.'); }
+  }
+  return { settings, setSettings, preview, previewChunks, loadPreview, applyPreview, file, setFile, upload, retry, operation, confirmDelete, setConfirmDelete, deletePolicy, title, setTitle, rename, busy, policies, detail, chunks, loading, error, tab, refresh, select, setTab, loadChunks };
 }

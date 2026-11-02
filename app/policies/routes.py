@@ -158,7 +158,6 @@ def retry_policy(policy_id: str, payload: PolicyVersion, request: Request, backg
         if policy['version'] != payload.version or policy['status'] != 'failed':
             raise HTTPException(409, 'Refresh the policy before retrying processing.')
         policy['status'] = 'processing'
-        library.store.save(policy)
         operations = PolicyOperations(library)
         operation = operations.start(policy)
     background.add_task(operations.run, operation['id'])

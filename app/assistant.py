@@ -46,7 +46,7 @@ class AssistantService:
         library=None,
     ) -> None:
         self._library = library
-        self._retriever = retriever or build_default_retriever()
+        self._retriever = retriever or (library.retriever if library else build_default_retriever())
         self._router = router or build_default_router()
         self._answerers = answerers or {}
 

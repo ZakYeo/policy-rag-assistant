@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 
 from app.config import get_settings
@@ -119,7 +120,10 @@ class HeuristicDocumentRouter:
         lowered = question.lower()
         scores: list[tuple[int, PolicyDocument]] = []
         for document in documents:
-            keywords = self.KEYWORD_MAP.get(document.document_id, set())
+            keywords = self.KEYWORD_MAP.get(document.document_id)
+            if keywords is None:
+                stopwords = {'policy', 'should', 'requires', 'require', 'must', 'with', 'that', 'this', 'from', 'have', 'your', 'when'}
+                keywords = set(re.findall(r"[a-z]{4,}", (document.title + ' ' + document.summary).lower())) - stopwords
             score = sum(1 for keyword in keywords if keyword in lowered)
             scores.append((score, document))
 

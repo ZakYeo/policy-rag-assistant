@@ -13,9 +13,9 @@ import { useNavigation } from '../viewmodels/useNavigation';
 const client = createPolicyApi();
 const preferences = createThemePreferences();
 export function App() {
-  const vm = usePolicyDesk(client);
-  const theme = useTheme(preferences);
   const library = useLibrary(libraryClient);
+  const vm = usePolicyDesk(client, undefined, library.policies.filter((policy) => policy.revision).map((policy) => policy.id));
+  const theme = useTheme(preferences);
   const { page, navigate } = useNavigation();
   return <>
     <a href="#main" className="skip-link">Skip to content</a>

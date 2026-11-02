@@ -1,9 +1,7 @@
 import type { LibraryViewModel } from '../contracts/library';
 import { Skeleton } from './Skeleton';
-
-export const secondaryButton = 'rounded border border-line bg-card px-4 py-2 text-sm font-semibold hover:bg-inset disabled:opacity-50';
-export const primaryButton = 'rounded border border-accent bg-accent px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50';
-export const fieldStyle = 'mt-1 w-full rounded border border-line bg-paper px-3 py-2 text-ink';
+import { ChunkSettingsForm } from './ChunkSettingsForm';
+import { ChunkList, fieldStyle, primaryButton, secondaryButton } from './LibraryComponents';
 
 export function PolicyLibrary({ vm }: { vm: LibraryViewModel }) {
   return <main id="main" className="page-width flex-1 py-10 min-[640px]:py-12">
@@ -19,7 +17,7 @@ export function PolicyLibrary({ vm }: { vm: LibraryViewModel }) {
       <section aria-labelledby="policies-heading" className="min-w-0 rounded-lg border border-line bg-card p-5 shadow-sm">
         <div className="flex items-center justify-between gap-3 border-b border-line-subtle pb-4"><h2 id="policies-heading" className="text-lg font-bold">Policies</h2><span className="text-sm text-muted">{vm.policies.length} uploaded</span></div>
         {vm.loading && !vm.policies.length ? <Skeleton rows={5} /> : <ul className="mt-3 space-y-2">{vm.policies.map((policy) => <li key={policy.id}>
-          <button type="button" onClick={() => void vm.select(policy.id)} aria-current={vm.detail?.id === policy.id ? 'true' : undefined}
+          <button type="button" disabled={vm.busy} onClick={() => void vm.select(policy.id)} aria-current={vm.detail?.id === policy.id ? 'true' : undefined}
             className={`w-full rounded border p-3 text-left [overflow-wrap:anywhere] hover:bg-inset ${vm.detail?.id === policy.id ? 'border-accent bg-inset' : 'border-transparent'}`}>
             <strong className="block font-semibold">{policy.title}</strong><span className="technical-text mt-1 block">{policy.filename}</span>
             <span className="mt-2 block text-sm text-muted">{policy.format.toUpperCase()} · {policy.chunk_count} chunks · {policy.status}</span>
@@ -48,21 +46,10 @@ export function PolicyLibrary({ vm }: { vm: LibraryViewModel }) {
           </div>
           {vm.tab === 'content' && <div className="space-y-6">{vm.detail.content.length ? vm.detail.content.map((page, index) => <section key={index}><h3 className="mb-2 text-sm font-semibold text-muted">{page.location}</h3><p className="whitespace-pre-wrap leading-relaxed [overflow-wrap:anywhere]">{page.text}</p></section>) : <p className="text-muted">Content will appear after processing.</p>}</div>}
           {vm.tab === 'chunks' && <ChunkList page={vm.chunks} load={vm.loadChunks} />}
-          {vm.tab === 'settings' && <dl className="space-y-3 text-sm"><div>Strategy: {vm.detail.settings.strategy}</div><div>Maximum size: {vm.detail.settings.size} characters</div><div>Overlap: {vm.detail.settings.overlap} characters</div></dl>}
+          {vm.tab === 'settings' && <ChunkSettingsForm vm={vm} />}
         </> : <div className="py-12 text-center"><h2 className="text-lg font-semibold">Select a policy</h2><p className="mt-2 text-muted">Read its content and inspect the chunks used for answers.</p></div>}
       </section>
     </div>
   </main>;
 }
 
-import type { ChunkPage } from '../contracts/library';
-export function ChunkList({ page, load }: { page: ChunkPage | null; load(offset: number): Promise<void> }) {
-  if (!page) return <Skeleton rows={4} />;
-  return <div><p className="mb-4 text-sm text-muted">{page.total} chunks · showing {page.total ? page.offset + 1 : 0}–{Math.min(page.offset + page.items.length, page.total)}</p>
-    <ol className="space-y-4">{page.items.map((chunk, index) => <li key={chunk.chunk_id} className="rounded border border-line-subtle bg-paper p-4">
-      <div className="mb-2 flex flex-wrap justify-between gap-2 text-sm font-semibold"><span>Chunk {page.offset + index + 1}</span><span className="text-muted">{chunk.location ?? `Page ${chunk.page_number}`} · {chunk.text.length} characters</span></div>
-      <p className="whitespace-pre-wrap leading-relaxed [overflow-wrap:anywhere]">{chunk.text}</p><p className="technical-text mt-3">{chunk.chunk_id}</p>
-    </li>)}</ol>
-    <div className="mt-5 flex gap-3"><button className={secondaryButton} disabled={!page.offset} onClick={() => void load(Math.max(0, page.offset - 20))}>Previous chunks</button><button className={secondaryButton} disabled={page.offset + page.items.length >= page.total} onClick={() => void load(page.offset + 20)}>Next chunks</button></div>
-  </div>;
-}

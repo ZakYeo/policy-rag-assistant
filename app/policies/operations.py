@@ -37,7 +37,7 @@ class PolicyOperations:
         operation = {'id': uuid4().hex, 'policy_id': policy['id'], 'kind': kind,
                      'version': policy['version'], 'preview_id': preview_id,
                      'status': 'queued', 'stage': 'Waiting to process', 'error': None}
-        self.save(operation)
+        self.store.save_with_operation(policy, operation)
         return operation
 
     def upload(self, filename, content):
@@ -49,7 +49,6 @@ class PolicyOperations:
                 raise PolicyConflict('A policy with that filename already exists. Rename the file before uploading.')
             policy = self.store.create(filename, content)
             policy['status'] = 'processing'
-            self.store.save(policy)
             return self.start(policy)
 
     def run(self, operation_id):
@@ -61,7 +60,13 @@ class PolicyOperations:
                 policy = self.store.checked(operation['policy_id'], operation['version'])
                 operation.update(status='running', stage='Extracting and chunking')
                 self.save(operation)
-                self.library.reindex(policy['id'])
+                if operation['kind'] == 'apply':
+                    revision = self.store.revision(operation['preview_id'])
+                    operation['stage'] = 'Indexing previewed chunks'
+                    self.save(operation)
+                    self.library.activate(revision, operation['version'])
+                else:
+                    self.library.reindex(policy['id'])
                 operation.update(status='succeeded', stage='Ready for questions')
             except Exception as exc:
                 logger.warning('Policy operation failed (%s)', type(exc).__name__)
@@ -77,6 +82,10 @@ class PolicyOperations:
     def recover(self):
         with self.store.connect() as db:
             operations = [json.loads(row[0]) for row in db.execute('SELECT payload FROM operations')]
+        for policy in self.store.list():
+            if policy['status'] == 'processing':
+                policy['status'] = 'ready' if policy['revision'] else 'failed'
+                self.store.save(policy)
         for operation in operations:
             if operation['status'] in {'queued', 'running'}:
                 operation.update(status='failed', stage='Processing interrupted', error='The server restarted. Retry processing.')
