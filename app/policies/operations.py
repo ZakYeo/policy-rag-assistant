@@ -44,7 +44,7 @@ class PolicyOperations:
         validate_filename(filename)
         if not content or len(content) > MAX_UPLOAD_BYTES:
             raise ValueError('Upload a non-empty file of at most 20 MiB.')
-        with self.store.lock:
+        with self.library.write_lock:
             if any(p['filename'].casefold() == filename.casefold() for p in self.store.list()):
                 raise PolicyConflict('A policy with that filename already exists. Rename the file before uploading.')
             policy = self.store.create(filename, content)
@@ -52,7 +52,7 @@ class PolicyOperations:
             return self.start(policy)
 
     def run(self, operation_id):
-        with self.store.lock:
+        with self.library.write_lock:
             operation = self.get(operation_id)
             if operation['status'] != 'queued':
                 return

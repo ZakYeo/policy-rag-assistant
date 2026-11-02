@@ -19,13 +19,14 @@ from app.retrieval.retriever import ChunkRetriever
 
 class PolicyLibrary:
     def __init__(self, directory: Path, documents_dir: Path, embedder):
+        self.write_lock = threading.RLock()
         self.store = PolicyStore(directory)
         self.documents_dir = documents_dir
         self.indexer = ChunkIndexer(directory / 'vectors', 'managed_policies', embedder)
         self.retriever = ChunkRetriever(directory / 'vectors', 'managed_policies', embedder)
 
     def initialize(self):
-        with self.store.lock:
+        with self.write_lock:
             from app.policies.operations import PolicyOperations
             PolicyOperations(self).recover()
             self.store.import_existing(self.documents_dir)
@@ -35,14 +36,14 @@ class PolicyLibrary:
             self.cleanup()
 
     def reindex(self, policy_id):
-        with self.store.lock:
+        with self.write_lock:
             policy = self.store.get(policy_id)
             revision = build_revision(self.store, policy)
             self.store.save_revision(revision)
             return self.activate(revision, policy['version'])
 
     def activate(self, revision, version):
-        with self.store.lock:
+        with self.write_lock:
             policy = self.store.checked(revision['policy_id'], version)
             self.stage_revision(revision)
             return self.publish_revision(revision, policy)
@@ -51,15 +52,25 @@ class PolicyLibrary:
         self.indexer.upsert_chunks([Chunk(**chunk) for chunk in revision['chunks']])
 
     def publish_revision(self, revision, policy):
-        version = policy['version'] + bool(policy['revision'])
-        policy.update(revision=revision['id'], chunk_count=len(revision['chunks']), status='ready',
-                      settings=revision['settings'], version=version)
-        self.store.save(policy)
+        with self.store.lock:
+            try:
+                self.store.checked(policy['id'], policy['version'])
+            except KeyError:
+                if policy['revision']:
+                    raise
+            version = policy['version'] + bool(policy['revision'])
+            policy.update(revision=revision['id'], chunk_count=len(revision['chunks']), status='ready',
+                          settings=revision['settings'], version=version)
+            self.store.save(policy)
         self.cleanup()
         return policy
 
+    def rename(self, policy_id, title, version):
+        with self.write_lock:
+            return self.store.rename(policy_id, title, version)
+
     def delete(self, policy_id, version):
-        with self.store.lock:
+        with self.write_lock, self.store.lock:
             self.store.checked(policy_id, version)
             self.store.remove(policy_id)
             self.cleanup()

@@ -1,3 +1,4 @@
+import asyncio
 from fastapi import BackgroundTasks
 from urllib.parse import unquote
 from app.policies.operations import MAX_UPLOAD_BYTES, PolicyOperations, validate_filename
@@ -89,7 +90,7 @@ def rename_policy(policy_id: str, payload: RenamePolicy, request: Request,
     same_origin(request)
     find_policy(library, policy_id)
     try:
-        return public_policy(library.store.rename(policy_id, payload.title, payload.version))
+        return public_policy(library.rename(policy_id, payload.title, payload.version))
     except PolicyConflict as exc:
         raise HTTPException(409, str(exc)) from exc
     except ValueError as exc:
@@ -132,7 +133,7 @@ async def upload_policy(request: Request, background: BackgroundTasks,
         content.extend(block)
     try:
         operations = PolicyOperations(library)
-        operation = operations.upload(filename, bytes(content))
+        operation = await asyncio.to_thread(operations.upload, filename, bytes(content))
     except PolicyConflict as exc:
         raise HTTPException(409, str(exc)) from exc
     except ValueError as exc:
@@ -153,7 +154,7 @@ def operation_status(operation_id: str, library=Depends(library_dependency)):
 def retry_policy(policy_id: str, payload: PolicyVersion, request: Request, background: BackgroundTasks,
                  library=Depends(library_dependency)):
     same_origin(request)
-    with library.store.lock:
+    with library.write_lock:
         policy = find_policy(library, policy_id)
         if policy['version'] != payload.version or policy['status'] != 'failed':
             raise HTTPException(409, 'Refresh the policy before retrying processing.')

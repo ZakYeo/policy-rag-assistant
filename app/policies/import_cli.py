@@ -5,7 +5,7 @@ from app.policies.store import DEFAULT_SETTINGS
 
 def import_directory(library, directory, size=900, overlap=150):
     count = 0
-    with library.store.lock:
+    with library.write_lock:
         existing = {policy['filename']: policy for policy in library.store.list()}
         for path in sorted(directory.glob('*.pdf')):
             previous = existing.get(path.name)

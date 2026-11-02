@@ -9,7 +9,7 @@ class PolicyPreviews:
         self.store = library.store
 
     def create(self, policy_id, settings, version):
-        with self.store.lock:
+        with self.library.write_lock:
             policy = self.store.checked(policy_id, version)
             if not policy['revision'] or policy['status'] != 'ready':
                 raise PolicyConflict('Wait until this policy is ready before changing its chunking.')
@@ -18,7 +18,7 @@ class PolicyPreviews:
             return revision
 
     def apply(self, policy_id, preview_id, version):
-        with self.store.lock:
+        with self.library.write_lock:
             policy = self.store.checked(policy_id, version)
             preview = self.store.revision(preview_id)
             if preview['policy_id'] != policy_id or preview['version'] != version or policy['status'] != 'ready':
