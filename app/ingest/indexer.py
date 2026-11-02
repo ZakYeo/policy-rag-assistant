@@ -33,9 +33,11 @@ class ChunkIndexer:
         )
 
     def upsert_chunks(self, chunks: list[Chunk]) -> int:
-        if not chunks:
-            return 0
+        for offset in range(0, len(chunks), 256):
+            self._upsert_batch(chunks[offset:offset + 256])
+        return len(chunks)
 
+    def _upsert_batch(self, chunks: list[Chunk]) -> None:
         embeddings = self._embedder.embed_texts([chunk.text for chunk in chunks])
         metadatas = [
             {
@@ -58,7 +60,6 @@ class ChunkIndexer:
             metadatas=metadatas,
             embeddings=embeddings,
         )
-        return len(chunks)
 
     def prune_revisions(self, active_revisions: set[str]) -> None:
         records = self._collection.get(include=['metadatas'])

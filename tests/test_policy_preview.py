@@ -41,3 +41,15 @@ class PreviewTests(unittest.TestCase):
         self.operations.recover()
         self.assertEqual(self.operations.get(operation['id'])['status'], 'failed')
         self.assertEqual(self.library.store.get(self.policy['id'])['revision'], self.policy['revision'])
+
+    def test_large_valid_preview_can_be_applied_in_batches(self):
+        operation = self.operations.upload('large.txt', b'X' * 600_100)
+        self.operations.run(operation['id'])
+        policy = self.library.store.get(operation['policy_id'])
+        settings = {**policy['settings'], 'size': 100, 'overlap': 0}
+        preview = self.previews.create(policy['id'], settings, policy['version'])
+        self.assertEqual(len(preview['chunks']), 6001)
+        operation = self.previews.apply(policy['id'], preview['id'], policy['version'])
+        self.operations.run(operation['id'])
+        self.assertEqual(self.operations.get(operation['id'])['status'], 'succeeded')
+        self.assertEqual(self.library.store.get(policy['id'])['chunk_count'], 6001)
