@@ -188,6 +188,10 @@ class OpenAIAnswerer:
                 raise AnswerProviderError(
                     "The answer stream ended before completion. Please try again."
                 )
+            if not "".join(parts).strip():
+                raise AnswerProviderError(
+                    "The OpenAI answer provider returned no text. Please try again."
+                )
         except AnswerProviderError:
             raise
         except Exception as exc:

@@ -72,6 +72,7 @@ test('shows skeletons and keeps form and theme usable while waiting', async ({ p
     await expect(page.getByTestId('skeleton').first()).toBeVisible();
     await expect(page.getByRole('button', { name: 'Checking policies…' })).toBeDisabled();
     await page.getByRole('textbox', { name: 'Your question' }).fill('My next question');
+    await expect(page.getByText('Answer for: Can I use AI?')).toBeVisible();
     await page.getByRole('button', { name: 'Switch to dark mode' }).click();
     await page.setViewportSize({ width: 390, height: 600 });
     await page.emulateMedia({ reducedMotion: 'reduce' });

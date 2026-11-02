@@ -75,4 +75,29 @@ describe('policy question flow', () => {
     expect(result.current.answer).toBe(answer.answer);
     expect(result.current.response?.sources).toEqual(answer.sources);
   });
+
+  test('aborts on unmount and closes the generator without publishing later results', async () => {
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => { release = resolve; });
+    let signal!: AbortSignal;
+    let closed = false;
+    const client = { ask: vi.fn(), async *stream(_question: string, requestSignal: AbortSignal) {
+      signal = requestSignal;
+      try {
+        yield { type: 'delta' as const, text: 'Partial answer' };
+        await gate;
+        yield { type: 'result' as const, response: answer };
+      } finally { closed = true; }
+    } };
+    const { result, unmount } = renderHook(() => usePolicyDesk(client));
+    act(() => result.current.setQuestion('Question'));
+    act(() => { void result.current.ask(); });
+    await waitFor(() => expect(result.current.answer).toBe('Partial answer'));
+    unmount();
+    expect(signal.aborted).toBe(true);
+    await act(async () => release());
+    await waitFor(() => expect(closed).toBe(true));
+    expect(result.current.response).toBeNull();
+    expect(result.current.answer).toBe('Partial answer');
+  });
 });

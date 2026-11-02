@@ -8,7 +8,7 @@ from fastapi.testclient import TestClient
 
 from app.assistant import AssistantService
 from app.main import create_app
-from app.retrieval.answerer import AnswerResult, AnswerSource, OpenAIAnswerer
+from app.retrieval.answerer import AnswerProviderError, AnswerResult, AnswerSource, OpenAIAnswerer
 from app.retrieval.retriever import RetrievedChunk
 from app.retrieval.router import RoutingResult
 from app.web.routes import get_assistant_service
@@ -134,49 +134,7 @@ class ProviderStreamingTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("could not find", result[0].answer)
 
     async def test_streams_sdk_deltas_and_closes_client_and_stream(self):
-        chunks = [
-            SimpleNamespace(
-                choices=[SimpleNamespace(delta=SimpleNamespace(content=text), finish_reason=reason)]
-            )
-            for text, reason in [(None, None), ("First ", None), ("second", None), (None, "stop")]
-        ]
-
-        class Stream:
-            closed = False
-
-            async def __aenter__(self):
-                return self
-
-            async def __aexit__(self, *args):
-                self.closed = True
-
-            def __aiter__(self):
-                return self
-
-            async def __anext__(self):
-                if not chunks:
-                    raise StopAsyncIteration
-                return chunks.pop(0)
-
-        stream = Stream()
-
-        class Client:
-            closed = False
-
-            def __init__(self, **kwargs):
-                self.chat = SimpleNamespace(completions=self)
-
-            async def __aenter__(self):
-                return self
-
-            async def __aexit__(self, *args):
-                self.closed = True
-
-            async def create(self, **kwargs):
-                self.options = kwargs
-                return stream
-
-        client = Client()
+        client = sdk_client([(None, None), ("First ", None), ("second", None), (None, "stop")])
         with patch("openai.AsyncOpenAI", return_value=client):
             result = [
                 event
@@ -186,7 +144,100 @@ class ProviderStreamingTests(unittest.IsolatedAsyncioTestCase):
             ]
         self.assertEqual(result[:2], ["First ", "second"])
         self.assertEqual(result[-1].answer, "First second")
-        self.assertTrue(stream.closed)
+        self.assertTrue(client.stream.closed)
         self.assertTrue(client.closed)
         self.assertTrue(client.options["stream"])
         self.assertIn(CHUNK.text, client.options["messages"][-1]["content"])
+
+    async def test_truncated_sdk_streams_fail_and_close_resources(self):
+        for reason in (None, "length", "content_filter"):
+            with self.subTest(reason=reason):
+                client = sdk_client([("Partial", None), (None, reason)])
+                received = []
+                with patch("openai.AsyncOpenAI", return_value=client):
+                    with self.assertRaisesRegex(AnswerProviderError, "before completion"):
+                        async for event in OpenAIAnswerer("test-key", "test-model").stream_answer(
+                            "Question", [CHUNK]
+                        ):
+                            received.append(event)
+                self.assertEqual(received, ["Partial"])
+                self.assertTrue(client.closed)
+                self.assertTrue(client.stream.closed)
+
+    async def test_transport_failure_closes_resources_without_leaking_details(self):
+        client = sdk_client([("Partial", None), RuntimeError("private diagnostic")])
+        with patch("openai.AsyncOpenAI", return_value=client):
+            with self.assertRaises(AnswerProviderError) as error:
+                async for event in OpenAIAnswerer("test-key", "test-model").stream_answer(
+                    "Question", [CHUNK]
+                ):
+                    pass
+        self.assertNotIn("private diagnostic", str(error.exception))
+        self.assertTrue(client.closed)
+        self.assertTrue(client.stream.closed)
+
+    async def test_closing_the_provider_consumer_closes_sdk_resources(self):
+        client = sdk_client([("Partial", None), ("Rest", "stop")])
+        with patch("openai.AsyncOpenAI", return_value=client):
+            stream = OpenAIAnswerer("test-key", "test-model").stream_answer("Question", [CHUNK])
+            self.assertEqual(await anext(stream), "Partial")
+            await stream.aclose()
+        self.assertTrue(client.closed)
+        self.assertTrue(client.stream.closed)
+
+    async def test_empty_completed_stream_is_not_a_successful_answer(self):
+        client = sdk_client([(None, "stop")])
+        with patch("openai.AsyncOpenAI", return_value=client):
+            with self.assertRaisesRegex(AnswerProviderError, "no text"):
+                async for event in OpenAIAnswerer("test-key", "test-model").stream_answer(
+                    "Question", [CHUNK]
+                ):
+                    pass
+
+
+def sdk_client(items):
+    class Stream:
+        closed = False
+
+        def __init__(self):
+            self.items = iter(items)
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            self.closed = True
+
+        def __aiter__(self):
+            return self
+
+        async def __anext__(self):
+            try:
+                item = next(self.items)
+            except StopIteration:
+                raise StopAsyncIteration from None
+            if isinstance(item, Exception):
+                raise item
+            text, reason = item
+            return SimpleNamespace(
+                choices=[SimpleNamespace(delta=SimpleNamespace(content=text), finish_reason=reason)]
+            )
+
+    class Client:
+        closed = False
+
+        def __init__(self):
+            self.stream = Stream()
+            self.chat = SimpleNamespace(completions=self)
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            self.closed = True
+
+        async def create(self, **kwargs):
+            self.options = kwargs
+            return self.stream
+
+    return Client()

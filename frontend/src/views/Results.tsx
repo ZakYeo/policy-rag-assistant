@@ -10,6 +10,8 @@ export function Results({ vm }: { vm: DeskViewModel }) {
   return <div className="grid min-w-0 items-start gap-7 min-[960px]:grid-cols-[7fr_5fr] min-[960px]:gap-10" aria-busy={vm.busy}>
     <div className="min-w-0 space-y-7">
       <Panel title="Your answer" meta="Guidance summary" id="answer-title">
+        {vm.submittedQuestion && vm.question.trim() !== vm.submittedQuestion &&
+          <p className="mb-4 text-sm text-muted [overflow-wrap:anywhere]">Answer for: {vm.submittedQuestion}</p>}
         {vm.status === 'error' && vm.answer && !vm.response && <p className="mb-4 font-semibold text-error">Incomplete answer — the response was interrupted.</p>}
         {vm.answer ? <p className="answer-text reveal whitespace-pre-wrap text-[1.3rem] leading-[1.7] font-medium [overflow-wrap:anywhere]">{vm.answer}</p>
           : vm.busy ? <Skeleton rows={4} /> : <Empty>Ask a question to see guidance from NorthStar’s policies.</Empty>}
