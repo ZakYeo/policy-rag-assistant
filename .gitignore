@@ -10,3 +10,9 @@ data/extracted/
 data/chunks/
 data/chroma/
 data/rag-test-reports/
+.codex
+node_modules/
+app/web/static/
+playwright-report/
+test-results/
+coverage/
