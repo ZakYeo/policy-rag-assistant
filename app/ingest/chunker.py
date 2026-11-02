@@ -23,7 +23,7 @@ class Chunk:
     location: str = ""
 
 
-def split_text(text: str, chunk_size: int = 900, chunk_overlap: int = 150) -> list[tuple[int, int, str]]:
+def split_text(text: str, chunk_size: int = 900, chunk_overlap: int = 150, max_chunks: int | None = None) -> list[tuple[int, int, str]]:
     if chunk_size <= 0:
         raise ValueError("chunk_size must be greater than zero")
     if chunk_overlap < 0:
@@ -51,6 +51,8 @@ def split_text(text: str, chunk_size: int = 900, chunk_overlap: int = 150) -> li
         chunk_text = stripped_text[start:end].strip()
         if chunk_text:
             chunks.append((start, end, chunk_text))
+            if max_chunks is not None and len(chunks) > max_chunks:
+                raise ValueError("This configuration produces too many chunks. Increase size or reduce overlap.")
 
         if end >= text_length:
             break
