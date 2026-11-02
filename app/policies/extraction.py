@@ -71,7 +71,8 @@ def extract_policy(path: Path, format: str):
                     raise ValueError('Use an unencrypted PDF with at most 1,000 pages.')
                 total = 0
                 for number, page in enumerate(document, 1):
-                    text = clean_text(page.get_text('text'))
+                    blocks = page.get_text('blocks', sort=True)
+                    text = clean_text('\n\n'.join(block[4] for block in blocks if block[6] == 0))
                     total += len(text)
                     if total > MAX_CHARACTERS:
                         raise ValueError('The extracted policy exceeds 2 million characters.')

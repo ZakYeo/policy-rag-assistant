@@ -27,3 +27,16 @@ class SourceMappingTests(unittest.TestCase):
                 self.assertLessEqual(chunk['char_end'], len(source))
                 self.assertEqual(chunk['text'], chunk['heading_context'] + source[chunk['char_start']:chunk['char_end']])
                 self.assertLessEqual(len(chunk['text']), settings['size'])
+
+    def test_pdf_extraction_keeps_paragraph_blocks_for_paragraph_strategy(self):
+        import fitz
+        from app.policies.extraction import extract_policy
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'paragraphs.pdf'
+            with fitz.open() as document:
+                page = document.new_page()
+                page.insert_text((72, 72), 'First paragraph has policy guidance.')
+                page.insert_text((72, 172), 'Second paragraph has separate guidance.')
+                document.save(path)
+            sections = extract_policy(path, 'pdf')
+            self.assertIn('\n\n', sections[0]['text'])
