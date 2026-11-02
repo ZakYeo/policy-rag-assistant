@@ -16,3 +16,5 @@ app/web/static/
 playwright-report/
 test-results/
 coverage/
+
+data/policies/

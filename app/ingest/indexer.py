@@ -39,6 +39,7 @@ class ChunkIndexer:
         embeddings = self._embedder.embed_texts([chunk.text for chunk in chunks])
         metadatas = [
             {
+                "revision": chunk.revision,
                 "document_id": chunk.document_id,
                 "document_name": chunk.document_name,
                 "source_path": chunk.source_path,

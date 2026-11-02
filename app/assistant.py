@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import AsyncIterator
-from contextlib import aclosing
+from contextlib import aclosing, nullcontext
 from dataclasses import dataclass
 
 from app.config import get_settings
@@ -34,6 +34,7 @@ class PreparedQuestion:
     routing: RoutingResult
     chunks: list[RetrievedChunk]
     answerer: object
+    documents: list
 
 
 class AssistantService:
@@ -42,7 +43,9 @@ class AssistantService:
         retriever=None,
         router=None,
         answerers: dict[str, object] | None = None,
+        library=None,
     ) -> None:
+        self._library = library
         self._retriever = retriever or build_default_retriever()
         self._router = router or build_default_router()
         self._answerers = answerers or {}
@@ -86,18 +89,18 @@ class AssistantService:
 
         settings = get_settings()
         retrieval_limit = top_k or settings.retrieval_top_k
-        routing_result = self._router.route(clean_question, POLICY_DOCUMENTS)
-        chunks = self._retriever.retrieve_filtered(
-            clean_question,
-            top_k=retrieval_limit,
-            document_ids=routing_result.document_ids,
-        )
+        snapshot = self._library.snapshot() if self._library else nullcontext((POLICY_DOCUMENTS, self._retriever))
+        with snapshot as (documents, retriever):
+            routing_result = self._router.route(clean_question, documents) if documents else RoutingResult([], "none", "No policies uploaded.")
+            chunks = retriever.retrieve_filtered(
+                clean_question, top_k=retrieval_limit, document_ids=routing_result.document_ids,
+            ) if documents else []
         selected_provider = answer_provider or settings.answer_provider
         answerer = self._answerers.get(selected_provider)
         if answerer is None:
             answerer = build_default_answerer(selected_provider)
 
-        return PreparedQuestion(clean_question, routing_result, chunks, answerer)
+        return PreparedQuestion(clean_question, routing_result, chunks, answerer, documents)
 
     @staticmethod
     def _response(prepared: PreparedQuestion, answer_result: AnswerResult) -> AssistantResponse:
@@ -105,7 +108,7 @@ class AssistantService:
             answer=answer_result.answer,
             answer_provider=answer_result.provider,
             routed_documents=[
-                _serialize_document(document_id) for document_id in prepared.routing.document_ids
+                _serialize_document(document_id, prepared.documents) for document_id in prepared.routing.document_ids
             ],
             routing_provider=prepared.routing.provider,
             routing_rationale=prepared.routing.rationale,
@@ -132,9 +135,9 @@ def _serialize_chunk(chunk: RetrievedChunk) -> dict[str, object]:
     }
 
 
-def _serialize_document(document_id: str) -> dict[str, object]:
+def _serialize_document(document_id: str, documents=POLICY_DOCUMENTS) -> dict[str, object]:
     document = next(
-        document for document in POLICY_DOCUMENTS if document.document_id == document_id
+        document for document in documents if document.document_id == document_id
     )
     return {
         "document_id": document.document_id,
@@ -144,4 +147,6 @@ def _serialize_document(document_id: str) -> dict[str, object]:
 
 
 def build_default_assistant_service() -> AssistantService:
-    return AssistantService()
+    from app.policies.library import get_library
+
+    return AssistantService(library=get_library())

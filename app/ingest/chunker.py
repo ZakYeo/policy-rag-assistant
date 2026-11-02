@@ -19,6 +19,7 @@ class Chunk:
     char_start: int
     char_end: int
     text: str
+    revision: str = ""
 
 
 def split_text(text: str, chunk_size: int = 900, chunk_overlap: int = 150) -> list[tuple[int, int, str]]:
