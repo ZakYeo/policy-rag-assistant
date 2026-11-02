@@ -1,9 +1,12 @@
 from pathlib import Path
+from contextlib import aclosing
+import json
+import logging
 
-from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import FileResponse
+from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import FileResponse, StreamingResponse
 
-from app.assistant import AssistantService, build_default_assistant_service
+from app.assistant import AnswerDelta, AssistantService, build_default_assistant_service
 from app.config import get_settings
 from app.retrieval.answerer import AnswerProviderError
 from app.web.schemas import AskRequest, AskResponse
@@ -11,6 +14,7 @@ from app.web.schemas import AskRequest, AskResponse
 
 router = APIRouter()
 STATIC_DIR = Path(__file__).parent / "static"
+logger = logging.getLogger(__name__)
 
 
 def get_assistant_service() -> AssistantService:
@@ -61,3 +65,54 @@ def ask_question(
         sources=response.sources,
         retrieved_chunks=response.retrieved_chunks,
     )
+
+
+@router.post("/api/ask/stream", tags=["assistant"])
+async def stream_question(
+    payload: AskRequest,
+    request: Request,
+    assistant: AssistantService = Depends(get_assistant_service),
+) -> StreamingResponse:
+    if not payload.question.strip():
+        raise HTTPException(status_code=400, detail="Question must not be empty")
+
+    async def events():
+        # Send headers promptly while routing and retrieval execute off the event loop.
+        yield ": stream-start\n\n"
+        try:
+            async with aclosing(
+                assistant.stream_question(
+                    payload.question,
+                    top_k=payload.top_k,
+                    answer_provider=payload.answer_provider,
+                )
+            ) as stream:
+                async for event in stream:
+                    if await request.is_disconnected():
+                        return
+                    if isinstance(event, AnswerDelta):
+                        yield _event("delta", {"text": event.text})
+                    else:
+                        response = AskResponse.model_validate(event, from_attributes=True)
+                        yield _event("result", response.model_dump())
+                        return
+        except AnswerProviderError as exc:
+            yield _event("error", {"message": str(exc)})
+        except Exception as exc:
+            logger.warning("Policy stream failed (%s)", type(exc).__name__)
+            yield _event(
+                "error", {"message": "The answer could not be completed. Please try again."}
+            )
+
+    return StreamingResponse(
+        events(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache, no-transform",
+            "X-Accel-Buffering": "no",
+        },
+    )
+
+
+def _event(name: str, data: dict) -> str:
+    return f"event: {name}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n"

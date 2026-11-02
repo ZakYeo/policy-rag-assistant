@@ -4,7 +4,7 @@ import json
 from dataclasses import dataclass
 
 from app.config import get_settings
-from app.retrieval.catalog import POLICY_DOCUMENTS, PolicyDocument
+from app.retrieval.catalog import PolicyDocument
 
 
 @dataclass(slots=True)

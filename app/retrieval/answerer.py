@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from collections.abc import AsyncIterator
 from dataclasses import dataclass
 
 from app.config import get_settings
@@ -127,6 +128,7 @@ class OpenAIAnswerer:
         from openai import OpenAI
 
         self._client = OpenAI(api_key=api_key)
+        self._api_key = api_key
         self._model = model
 
     def answer(self, question: str, chunks: list[RetrievedChunk]) -> AnswerResult:
@@ -140,30 +142,11 @@ class OpenAIAnswerer:
                 provider="openai",
             )
 
-        context = "\n\n".join(
-            [
-                f"Source: {chunk.document_name} page {chunk.page_number}\n{chunk.text}"
-                for chunk in chunks
-            ]
-        )
         try:
             response = self._client.chat.completions.create(
                 model=self._model,
                 temperature=0,
-                messages=[
-                    {
-                        "role": "system",
-                        "content": (
-                            "You are a policy assistant. Answer only from the provided context. "
-                            "If the context is insufficient, say so clearly. Cite sources inline "
-                            "using the provided document names and page numbers."
-                        ),
-                    },
-                    {
-                        "role": "user",
-                        "content": f"Question: {question}\n\nContext:\n{context}",
-                    },
-                ],
+                messages=_messages(question, chunks),
             )
         except Exception as exc:
             raise AnswerProviderError(
@@ -171,15 +154,76 @@ class OpenAIAnswerer:
                 "network access, or account quota."
             ) from exc
         answer_text = response.choices[0].message.content or ""
-        sources = [
-            AnswerSource(
-                document_name=chunk.document_name,
-                page_number=chunk.page_number,
-                chunk_id=chunk.chunk_id,
-            )
-            for chunk in chunks
-        ]
-        return AnswerResult(answer=answer_text, sources=sources, provider="openai")
+        return AnswerResult(answer=answer_text, sources=_sources(chunks), provider="openai")
+
+    async def stream_answer(
+        self, question: str, chunks: list[RetrievedChunk]
+    ) -> AsyncIterator[str | AnswerResult]:
+        if not chunks:
+            yield self.answer(question, chunks)
+            return
+
+        from openai import AsyncOpenAI
+
+        parts: list[str] = []
+        finish_reason = None
+        try:
+            async with AsyncOpenAI(api_key=self._api_key) as client:
+                async with await client.chat.completions.create(
+                    model=self._model,
+                    temperature=0,
+                    messages=_messages(question, chunks),
+                    stream=True,
+                ) as stream:
+                    async for chunk in stream:
+                        if not chunk.choices:
+                            continue
+                        choice = chunk.choices[0]
+                        if choice.delta.content:
+                            parts.append(choice.delta.content)
+                            yield choice.delta.content
+                        if choice.finish_reason is not None:
+                            finish_reason = choice.finish_reason
+            if finish_reason != "stop":
+                raise AnswerProviderError(
+                    "The answer stream ended before completion. Please try again."
+                )
+        except AnswerProviderError:
+            raise
+        except Exception as exc:
+            raise AnswerProviderError(
+                "The OpenAI answer provider failed. Check backend configuration, API key, "
+                "network access, or account quota."
+            ) from exc
+        yield AnswerResult(answer="".join(parts), sources=_sources(chunks), provider="openai")
+
+
+def _messages(question: str, chunks: list[RetrievedChunk]) -> list[dict[str, str]]:
+    context = "\n\n".join(
+        f"Source: {chunk.document_name} page {chunk.page_number}\n{chunk.text}" for chunk in chunks
+    )
+    return [
+        {
+            "role": "system",
+            "content": (
+                "You are a policy assistant. Answer only from the provided context. "
+                "If the context is insufficient, say so clearly. Cite sources inline "
+                "using the provided document names and page numbers."
+            ),
+        },
+        {"role": "user", "content": f"Question: {question}\n\nContext:\n{context}"},
+    ]
+
+
+def _sources(chunks: list[RetrievedChunk]) -> list[AnswerSource]:
+    return [
+        AnswerSource(
+            document_name=chunk.document_name,
+            page_number=chunk.page_number,
+            chunk_id=chunk.chunk_id,
+        )
+        for chunk in chunks
+    ]
 
 
 def build_default_answerer(provider: str | None = None) -> ExtractiveAnswerer | OpenAIAnswerer:
@@ -194,6 +238,5 @@ def build_default_answerer(provider: str | None = None) -> ExtractiveAnswerer | 
         )
 
     raise AnswerProviderError(
-        f"Unsupported answer provider: {selected_provider}. "
-        "Expected 'extractive' or 'openai'."
+        f"Unsupported answer provider: {selected_provider}. Expected 'extractive' or 'openai'."
     )

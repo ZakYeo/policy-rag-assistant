@@ -1,12 +1,15 @@
 from __future__ import annotations
 
+import asyncio
+from collections.abc import AsyncIterator
+from contextlib import aclosing
 from dataclasses import dataclass
 
 from app.config import get_settings
-from app.retrieval.answerer import AnswerProviderError, build_default_answerer
+from app.retrieval.answerer import AnswerResult, build_default_answerer
 from app.retrieval.catalog import POLICY_DOCUMENTS
 from app.retrieval.retriever import RetrievedChunk, build_default_retriever
-from app.retrieval.router import build_default_router
+from app.retrieval.router import RoutingResult, build_default_router
 
 
 @dataclass(slots=True)
@@ -18,6 +21,19 @@ class AssistantResponse:
     routing_rationale: str
     sources: list[dict[str, object]]
     retrieved_chunks: list[dict[str, object]]
+
+
+@dataclass(slots=True)
+class AnswerDelta:
+    text: str
+
+
+@dataclass(slots=True)
+class PreparedQuestion:
+    question: str
+    routing: RoutingResult
+    chunks: list[RetrievedChunk]
+    answerer: object
 
 
 class AssistantService:
@@ -37,6 +53,33 @@ class AssistantService:
         top_k: int | None = None,
         answer_provider: str | None = None,
     ) -> AssistantResponse:
+        prepared = self._prepare(question, top_k, answer_provider)
+        result = prepared.answerer.answer(prepared.question, prepared.chunks)
+        return self._response(prepared, result)
+
+    async def stream_question(
+        self,
+        question: str,
+        top_k: int | None = None,
+        answer_provider: str | None = None,
+    ) -> AsyncIterator[AnswerDelta | AssistantResponse]:
+        prepared = await asyncio.to_thread(self._prepare, question, top_k, answer_provider)
+        if not hasattr(prepared.answerer, "stream_answer"):
+            result = await asyncio.to_thread(
+                prepared.answerer.answer, prepared.question, prepared.chunks
+            )
+            yield self._response(prepared, result)
+            return
+        async with aclosing(
+            prepared.answerer.stream_answer(prepared.question, prepared.chunks)
+        ) as stream:
+            async for event in stream:
+                if isinstance(event, str):
+                    yield AnswerDelta(event)
+                else:
+                    yield self._response(prepared, event)
+
+    def _prepare(self, question, top_k, answer_provider) -> PreparedQuestion:
         clean_question = question.strip()
         if not clean_question:
             raise ValueError("Question must not be empty")
@@ -54,16 +97,18 @@ class AssistantService:
         if answerer is None:
             answerer = build_default_answerer(selected_provider)
 
-        answer_result = answerer.answer(clean_question, chunks)
+        return PreparedQuestion(clean_question, routing_result, chunks, answerer)
+
+    @staticmethod
+    def _response(prepared: PreparedQuestion, answer_result: AnswerResult) -> AssistantResponse:
         return AssistantResponse(
             answer=answer_result.answer,
             answer_provider=answer_result.provider,
             routed_documents=[
-                _serialize_document(document_id)
-                for document_id in routing_result.document_ids
+                _serialize_document(document_id) for document_id in prepared.routing.document_ids
             ],
-            routing_provider=routing_result.provider,
-            routing_rationale=routing_result.rationale,
+            routing_provider=prepared.routing.provider,
+            routing_rationale=prepared.routing.rationale,
             sources=[
                 {
                     "document_name": source.document_name,
@@ -72,10 +117,7 @@ class AssistantService:
                 }
                 for source in answer_result.sources
             ],
-            retrieved_chunks=[
-                _serialize_chunk(chunk)
-                for chunk in chunks
-            ],
+            retrieved_chunks=[_serialize_chunk(chunk) for chunk in prepared.chunks],
         )
 
 
