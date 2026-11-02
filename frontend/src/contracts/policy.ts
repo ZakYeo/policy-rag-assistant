@@ -1,3 +1,5 @@
+import type { SampleQuestionGroup } from './sampleQuestions';
+
 export type AnswerProvider = 'openai' | 'extractive';
 export interface Source { document_name: string; page_number: number; chunk_id: string }
 export interface PolicyDocument { document_id: string; document_name: string; title: string }
@@ -27,6 +29,8 @@ export interface DeskState {
   error: string | null;
 }
 export interface DeskViewModel extends DeskState {
+  sampleQuestionGroups: readonly SampleQuestionGroup[];
+  selectSampleQuestion(id: string): void;
   busy: boolean;
   references: (Source & { title: string })[];
   passages: (RetrievedChunk & { title: string })[];

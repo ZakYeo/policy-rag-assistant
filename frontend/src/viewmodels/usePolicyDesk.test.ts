@@ -4,6 +4,20 @@ import { usePolicyDesk } from './usePolicyDesk';
 import { answer } from '../test/fixtures';
 
 describe('policy question flow', () => {
+  test('sample selection fills the draft without submitting or changing the chosen mode', () => {
+    const client = { ask: vi.fn(), stream: vi.fn() };
+    const focusEditor = vi.fn();
+    const { result } = renderHook(() => usePolicyDesk(client, focusEditor));
+    act(() => result.current.setProvider('extractive'));
+    const sample = result.current.sampleQuestionGroups[0].questions[0];
+    act(() => result.current.selectSampleQuestion(sample.id));
+    expect(result.current.question).toBe(sample.question);
+    expect(result.current.provider).toBe('extractive');
+    expect(result.current.status).toBe('idle');
+    expect(client.ask).not.toHaveBeenCalled();
+    expect(client.stream).not.toHaveBeenCalled();
+    expect(focusEditor).toHaveBeenCalledOnce();
+  });
   test('validates blank questions without contacting the API', async () => {
     const client = { ask: vi.fn(), stream: vi.fn() };
     const { result } = renderHook(() => usePolicyDesk(client));

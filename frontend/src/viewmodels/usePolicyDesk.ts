@@ -1,5 +1,7 @@
 import { useEffect, useReducer, useRef } from 'react';
 import type { AnswerProvider, AskResponse, DeskState, DeskViewModel, PolicyClient } from '../contracts/policy';
+import { sampleQuestionGroups } from '../models/sampleQuestions';
+import { focusQuestionEditor } from '../models/questionEditor';
 
 type Action = { type: 'question'; value: string } | { type: 'provider'; value: AnswerProvider }
   | { type: 'begin'; question: string } | { type: 'result'; value: AskResponse }
@@ -19,7 +21,7 @@ function reducer(state: DeskState, action: Action): DeskState {
   }
 }
 
-export function usePolicyDesk(client: PolicyClient): DeskViewModel {
+export function usePolicyDesk(client: PolicyClient, focusEditor = focusQuestionEditor): DeskViewModel {
   const [state, dispatch] = useReducer(reducer, initialState);
   const pending = useRef<AbortController | null>(null);
   useEffect(() => () => { pending.current?.abort(); pending.current = null; }, []);
@@ -53,6 +55,13 @@ export function usePolicyDesk(client: PolicyClient): DeskViewModel {
     }
   }
   return {
+    sampleQuestionGroups,
+    selectSampleQuestion(id) {
+      const sample = sampleQuestionGroups.flatMap((group) => group.questions).find((question) => question.id === id);
+      if (!sample) return;
+      dispatch({ type: 'question', value: sample.question });
+      focusEditor();
+    },
     ...state, busy: state.status === 'loading' || state.status === 'streaming',
     references: (state.response?.sources ?? []).map((item) => ({ ...item, title: title(item.document_name) })),
     passages: (state.response?.retrieved_chunks ?? []).map((item) => ({ ...item, title: title(item.document_name) })),
