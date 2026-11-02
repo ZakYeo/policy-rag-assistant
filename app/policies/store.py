@@ -49,6 +49,10 @@ class PolicyStore:
         with self.lock, self.connect() as db:
             db.execute("INSERT OR REPLACE INTO policies VALUES (?,?)", (policy['id'], json.dumps(policy)))
 
+    def save_operation(self, operation):
+        with self.connect() as db:
+            db.execute('INSERT OR REPLACE INTO operations VALUES (?,?)', (operation['id'], json.dumps(operation)))
+
     def save_with_operation(self, policy, operation):
         with self.lock, self.connect() as db:
             db.execute('INSERT OR REPLACE INTO policies VALUES (?,?)', (policy['id'], json.dumps(policy)))

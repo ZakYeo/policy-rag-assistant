@@ -23,8 +23,7 @@ class PolicyOperations:
         self.store = library.store
 
     def save(self, operation):
-        with self.store.connect() as db:
-            db.execute('INSERT OR REPLACE INTO operations VALUES (?,?)', (operation['id'], json.dumps(operation)))
+        self.store.save_operation(operation)
 
     def get(self, operation_id):
         with self.store.connect() as db:
@@ -37,6 +36,7 @@ class PolicyOperations:
         operation = {'id': uuid4().hex, 'policy_id': policy['id'], 'kind': kind,
                      'version': policy['version'], 'preview_id': preview_id,
                      'status': 'queued', 'stage': 'Waiting to process', 'error': None}
+        policy['operation_id'] = operation['id']
         self.store.save_with_operation(policy, operation)
         return operation
 
@@ -64,9 +64,9 @@ class PolicyOperations:
                     revision = self.store.revision(operation['preview_id'])
                     operation['stage'] = 'Indexing previewed chunks'
                     self.save(operation)
-                    self.library.activate(revision, operation['version'])
+                    self.library.activate(revision, operation['version'], operation=operation)
                 else:
-                    self.library.reindex(policy['id'])
+                    self.library.reindex(policy['id'], operation=operation)
                 operation.update(status='succeeded', stage='Ready for questions')
             except Exception as exc:
                 logger.warning('Policy operation failed (%s)', type(exc).__name__)
@@ -88,7 +88,14 @@ class PolicyOperations:
                 self.store.save(policy)
         for operation in operations:
             if operation['status'] in {'queued', 'running'}:
-                operation.update(status='failed', stage='Processing interrupted', error='The server restarted. Retry processing.')
+                try:
+                    policy = self.store.get(operation['policy_id'])
+                    published = policy['revision'] and policy['revision'] == (operation.get('target_revision') or operation.get('preview_id'))
+                except KeyError:
+                    published = False
+                operation.update(status='succeeded' if published else 'failed',
+                                 stage='Ready for questions' if published else 'Processing interrupted',
+                                 error=None if published else 'The server restarted. Retry processing.')
                 self.save(operation)
                 try:
                     policy = self.store.get(operation['policy_id'])

@@ -53,3 +53,12 @@ class PreviewTests(unittest.TestCase):
         self.operations.run(operation['id'])
         self.assertEqual(self.operations.get(operation['id'])['status'], 'succeeded')
         self.assertEqual(self.library.store.get(policy['id'])['chunk_count'], 6001)
+
+    def test_publication_commits_terminal_operation_with_active_revision(self):
+        preview = self.previews.create(self.policy['id'], self.settings, self.policy['version'])
+        operation = self.previews.apply(self.policy['id'], preview['id'], self.policy['version'])
+        self.library.activate(preview, self.policy['version'], operation=operation)
+        # Simulate a restart immediately after publication, before run() returns.
+        self.operations.recover()
+        self.assertEqual(self.operations.get(operation['id'])['status'], 'succeeded')
+        self.assertEqual(self.library.store.get(self.policy['id'])['revision'], preview['id'])

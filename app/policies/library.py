@@ -35,23 +35,26 @@ class PolicyLibrary:
                     self.reindex(policy['id'])
             self.cleanup()
 
-    def reindex(self, policy_id):
+    def reindex(self, policy_id, operation=None):
         with self.write_lock:
             policy = self.store.get(policy_id)
             revision = build_revision(self.store, policy)
             self.store.save_revision(revision)
-            return self.activate(revision, policy['version'])
+            return self.activate(revision, policy['version'], operation=operation)
 
-    def activate(self, revision, version):
+    def activate(self, revision, version, operation=None):
         with self.write_lock:
             policy = self.store.checked(revision['policy_id'], version)
+            if operation is not None:
+                operation['target_revision'] = revision['id']
+                self.store.save_operation(operation)
             self.stage_revision(revision)
-            return self.publish_revision(revision, policy)
+            return self.publish_revision(revision, policy, operation=operation)
 
     def stage_revision(self, revision):
         self.indexer.upsert_chunks([Chunk(**chunk) for chunk in revision['chunks']])
 
-    def publish_revision(self, revision, policy):
+    def publish_revision(self, revision, policy, operation=None):
         with self.store.lock:
             try:
                 self.store.checked(policy['id'], policy['version'])
@@ -61,7 +64,11 @@ class PolicyLibrary:
             version = policy['version'] + bool(policy['revision'])
             policy.update(revision=revision['id'], chunk_count=len(revision['chunks']), status='ready',
                           settings=revision['settings'], version=version)
-            self.store.save(policy)
+            if operation is not None:
+                operation.update(status='succeeded', stage='Ready for questions', error=None)
+                self.store.save_with_operation(policy, operation)
+            else:
+                self.store.save(policy)
         self.cleanup()
         return policy
 
