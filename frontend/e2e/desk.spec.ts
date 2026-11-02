@@ -1,0 +1,41 @@
+import { expect, test } from '@playwright/test';
+import { answer } from '../src/test/fixtures';
+
+test('responds with real API-shaped evidence and adapts when resized', async ({ page }, info) => {
+  const failures: string[] = [];
+  page.on('pageerror', (error) => failures.push(error.message));
+  await page.route('**/api/ask', (route) => route.fulfill({ json: answer }));
+  await page.setViewportSize({ width: 1572, height: 1000 });
+  await page.goto('/');
+  await page.getByRole('textbox', { name: 'Your question' }).fill('Can I put customer data into a public AI tool?');
+  await page.getByRole('button', { name: 'Ask a question', exact: true }).click();
+  await expect(page.locator('.answer-text')).toHaveText(answer.answer);
+  await expect(page.getByRole('heading', { name: 'Policy references' })).toBeVisible();
+  await expect(page.getByText(answer.sources[0].chunk_id, { exact: false })).toBeVisible();
+  await page.screenshot({ path: info.outputPath('desktop-light.png'), fullPage: true });
+  for (const [width, height] of [[320, 720], [390, 844], [768, 1024], [844, 390], [1440, 500], [1920, 1080]]) {
+    await page.setViewportSize({ width, height });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await expect(page.getByRole('textbox', { name: 'Your question' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Ask a question', exact: true })).toBeVisible();
+    await expect(page.locator('.answer-text')).toHaveText(answer.answer);
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.screenshot({ path: info.outputPath('mobile-light.png'), fullPage: true });
+  expect(failures).toEqual([]);
+});
+
+test('validates blank input and renders extractive content safely', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Ask a question', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText('Please enter a question');
+  await page.route('**/api/ask', async (route) => {
+    expect(route.request().postDataJSON().answer_provider).toBe('extractive');
+    await route.fulfill({ json: { ...answer, answer: '<img src=x onerror="alert(1)">', answer_provider: 'extractive' } });
+  });
+  await page.getByRole('radio', { name: 'Direct policy extracts (Extractive)' }).check();
+  await page.getByRole('textbox', { name: 'Your question' }).fill('What does the policy say?');
+  await page.getByRole('button', { name: 'Ask a question', exact: true }).click();
+  await expect(page.locator('.answer-text')).toContainText('<img');
+  await expect(page.locator('img')).toHaveCount(0);
+});

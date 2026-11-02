@@ -1,11 +1,58 @@
 @import 'tailwindcss';
-@import '@fontsource/source-sans-3/400.css';
-@import '@fontsource/source-sans-3/600.css';
-@import '@fontsource/source-sans-3/700.css';
-@import '@fontsource/source-sans-3/400-italic.css';
-@import '@fontsource/source-code-pro/400.css';
+@import '@fontsource/source-sans-3/latin-400.css';
+@import '@fontsource/source-sans-3/latin-600.css';
+@import '@fontsource/source-sans-3/latin-700.css';
+@import '@fontsource/source-sans-3/latin-400-italic.css';
+@import '@fontsource/source-code-pro/latin-400.css';
 
 @theme {
   --font-sans: 'Source Sans 3', sans-serif;
   --font-mono: 'Source Code Pro', monospace;
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-card: var(--card);
+  --color-inset: var(--inset);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-line-subtle: var(--line-subtle);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-on-accent: var(--on-accent);
+  --color-error: var(--error);
+  --color-error-surface: var(--error-surface);
+}
+
+:root {
+  color-scheme: light;
+  --paper: #faf9f5;
+  --card: #ffffff;
+  --inset: #f4f2ec;
+  --ink: #1d2125;
+  --muted: #626d76;
+  --line: #e2dfd6;
+  --line-subtle: #ebe8df;
+  --accent: #1e3a5f;
+  --accent-hover: #294d7b;
+  --on-accent: #ffffff;
+  --error: #a02b2b;
+  --error-surface: #fff2ef;
+}
+
+@layer base {
+  body { @apply m-0 min-w-0 bg-paper font-sans text-ink antialiased; }
+  #root { @apply flex min-h-dvh flex-col; }
+  button, input, textarea, summary { @apply outline-offset-4 focus-visible:outline-2 focus-visible:outline-accent; }
+  button:not(:disabled), summary { @apply cursor-pointer; }
+  ::selection { background: var(--accent); color: var(--on-accent); }
+}
+
+@layer components {
+  .page-width { @apply mx-auto w-full max-w-[1264px] px-4 min-[640px]:px-8; }
+  .panel { @apply min-w-0 rounded-lg border border-line bg-card p-5 shadow-[0_1px_2px_0_rgb(0_0_0/0.04)] min-[640px]:p-7; }
+  .primary-button { @apply min-h-12 shrink-0 rounded border border-accent bg-accent px-6 py-3 text-base font-semibold text-on-accent hover:bg-accent-hover disabled:cursor-wait disabled:opacity-60; }
+  .technical-text { @apply font-mono text-sm leading-relaxed text-muted [overflow-wrap:anywhere]; }
+  .skip-link { @apply sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-10 focus:rounded focus:bg-card focus:p-3 focus:text-ink; }
 }
