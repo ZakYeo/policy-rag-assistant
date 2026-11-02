@@ -50,7 +50,10 @@ def split_text(text: str, chunk_size: int = 900, chunk_overlap: int = 150, max_c
 
         chunk_text = stripped_text[start:end].strip()
         if chunk_text:
-            chunks.append((start, end, chunk_text))
+            leading = len(stripped_text[start:end]) - len(stripped_text[start:end].lstrip())
+            trailing = len(stripped_text[start:end]) - len(stripped_text[start:end].rstrip())
+            original_offset = len(text) - len(text.lstrip())
+            chunks.append((start + leading + original_offset, end - trailing + original_offset, chunk_text))
             if max_chunks is not None and len(chunks) > max_chunks:
                 raise ValueError("This configuration produces too many chunks. Increase size or reduce overlap.")
 

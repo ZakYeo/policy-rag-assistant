@@ -140,7 +140,7 @@ test('supports keyboard controls and has no extra product actions', async ({ pag
   await page.keyboard.press('ArrowRight');
   await expect(page.getByRole('radio', { name: 'Direct policy extracts (Extractive)' })).toBeChecked();
   await expect(page.getByRole('button')).toHaveCount(10);
-  await expect(page.getByRole('link')).toHaveCount(1);
+  await expect(page.getByRole('link')).toHaveCount(3);
   await expect(page.getByRole('textbox')).toHaveCount(1);
   await expect(page.getByRole('radio')).toHaveCount(2);
 });

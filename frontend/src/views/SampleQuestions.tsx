@@ -4,6 +4,7 @@ export function SampleQuestions({ groups, onSelect }: {
   groups: readonly SampleQuestionGroup[];
   onSelect(id: string): void;
 }) {
+  if (!groups.length) return null;
   return <aside className="sample-panel panel mb-10" aria-labelledby="sample-questions-title">
     <h2 id="sample-questions-title" className="text-lg font-bold">Sample Questions</h2>
     <p className="mt-1 mb-5 text-sm leading-relaxed text-muted">Choose one to fill your question. Edit it before asking if you like.</p>

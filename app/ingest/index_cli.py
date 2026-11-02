@@ -56,6 +56,11 @@ def main() -> None:
         indexer.reset()
     indexed_count = indexer.upsert_chunks(chunks)
 
+    from app.policies.library import get_library
+    from app.policies.import_cli import import_directory
+    managed_count = import_directory(get_library(), documents_dir, args.chunk_size, args.chunk_overlap)
+    print(f"Updated the managed policy catalogue with {managed_count} chunks.")
+
     print(
         "Indexed "
         f"{indexed_count} chunks from {len(documents)} documents into "

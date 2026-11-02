@@ -6,7 +6,7 @@ from contextlib import aclosing, nullcontext
 from dataclasses import dataclass
 
 from app.config import get_settings
-from app.retrieval.answerer import AnswerResult, build_default_answerer
+from app.retrieval.answerer import AnswerResult, ExtractiveAnswerer, build_default_answerer
 from app.retrieval.catalog import POLICY_DOCUMENTS
 from app.retrieval.retriever import RetrievedChunk, build_default_retriever
 from app.retrieval.router import RoutingResult, build_default_router
@@ -96,7 +96,7 @@ class AssistantService:
                 clean_question, top_k=retrieval_limit, document_ids=routing_result.document_ids,
             ) if documents else []
         selected_provider = answer_provider or settings.answer_provider
-        answerer = self._answerers.get(selected_provider)
+        answerer = self._answerers.get(selected_provider) if documents else ExtractiveAnswerer()
         if answerer is None:
             answerer = build_default_answerer(selected_provider)
 

@@ -47,3 +47,28 @@ class PolicyLibraryTests(unittest.TestCase):
                 self.assertEqual(retriever.retrieve_filtered('AI', 4, [policy['id']]), [])
             library.initialize()
             self.assertEqual(len(library.store.list()), 2)
+
+    def test_cli_import_refreshes_original_and_uses_shared_active_revision(self):
+        from app.policies.import_cli import import_directory
+        with tempfile.TemporaryDirectory() as directory:
+            library = self.library(directory)
+            library.initialize()
+            policy = library.store.list()[0]
+            previous_revision = policy['revision']
+            import_directory(library, Path('documents'), 300, 30)
+            policy = library.store.get(policy['id'])
+            self.assertNotEqual(policy['revision'], previous_revision)
+            self.assertEqual(policy['settings']['size'], 300)
+            self.assertEqual(len(library.store.list()), 3)
+
+    def test_empty_library_answers_without_routing_or_constructing_provider(self):
+        from app.assistant import AssistantService
+        from unittest.mock import Mock
+        with tempfile.TemporaryDirectory() as directory:
+            library = PolicyLibrary(Path(directory), Path(directory) / 'empty', LocalHashEmbedder())
+            library.initialize()
+            router = Mock()
+            with patch('app.assistant.build_default_answerer', side_effect=AssertionError('No provider needed')):
+                response = AssistantService(library=library, router=router).answer_question('What are the rules?', answer_provider='openai')
+            router.route.assert_not_called()
+            self.assertFalse(response.sources)

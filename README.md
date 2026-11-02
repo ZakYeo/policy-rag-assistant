@@ -437,3 +437,44 @@ The streaming endpoint accepts the existing ask request and emits `delta` events
 `{ "text": "..." }`, followed by one terminal `result` containing the existing full
 answer response, or a terminal `error` with `{ "message": "..." }`. Clients must treat
 EOF without a result as interruption. The JSON ask endpoint remains compatible.
+
+### Manage policies
+
+Open **Manage policies** in the header or visit `/policies`. The page uses the same
+responsive layout and light/dark preference as the question page. Navigation keeps
+your question draft and previous answer intact.
+
+Upload a PDF, HTML or UTF-8 text file (one at a time, at most 20 MiB). PDFs must have
+readable text and be unencrypted; OCR and Word files are not supported. Extraction
+is limited to 1,000 PDF pages / 2 million characters and 10,000 chunks per revision.
+The original is stored privately under a generated filename and downloaded as an
+attachment. Uploaded HTML is extracted to text, never executed or embedded.
+
+Select a policy to read its content, download the original, rename its display
+title, inspect chunks or delete it. Deletion removes it from future answers;
+previous answers remain historical snapshots. Sample questions requiring deleted
+policies disappear. Duplicate original filenames are rejected.
+
+Chunking supports character length, sentence/punctuation boundaries, paragraphs,
+and HTML headings/sections (HTML files only). Size and overlap are measured in
+characters. Default settings remain 900 / 150. HTML heading context counts towards
+the size limit. Preview changes first, then apply them to update search. Failed or
+interrupted processing retains the previous searchable revision. Failed uploads
+can be retried or deleted. Processing status is persisted and can be refreshed.
+
+The catalogue, originals, revisions and managed Chroma index live in
+`data/policies/` (relative to `VECTOR_STORE_DIR`'s parent), excluded from Git.
+The existing three PDFs are imported once, preserving their identities and titles.
+Back up this whole directory together. Run one application process: management
+writes and retrieval snapshots use a process-local lock. There is no authentication
+layer; retain the app's local/internal deployment boundary.
+
+`policy-rag-index` also updates the managed catalogue through the shared extraction
+and revision pipeline. Its `--reset` option resets the legacy CLI collection; it
+does not delete policies uploaded through the UI.
+
+Management APIs are under `/api/policies`, with operation status at
+`/api/operations/{id}`. Uploads use a raw body and URL-encoded `X-Filename` header.
+Mutations reject cross-origin browser requests; rename/delete/apply check policy
+versions. The existing JSON and streamed question endpoints remain compatible,
+with an additional optional source-location label for HTML/text policies.

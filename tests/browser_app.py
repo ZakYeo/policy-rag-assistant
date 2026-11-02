@@ -2,14 +2,23 @@
 
 import asyncio
 from dataclasses import asdict
+from tempfile import TemporaryDirectory
+from pathlib import Path
+from app.policies.library import PolicyLibrary
+from app.policies.routes import library_dependency
+from app.retrieval.embeddings import LocalHashEmbedder
 
 from fastapi import HTTPException
 
-from app.assistant import AnswerDelta, AssistantResponse, build_default_assistant_service
+from app.assistant import AnswerDelta, AssistantResponse, AssistantService
 from app.main import create_app
 from app.web.routes import get_assistant_service
 
+fixture_directory = TemporaryDirectory(prefix="policy-browser-")
+fixture_library = PolicyLibrary(Path(fixture_directory.name), Path("documents"), LocalHashEmbedder())
+fixture_library.initialize()
 app = create_app()
+app.dependency_overrides[library_dependency] = lambda: fixture_library
 gates: dict[str, asyncio.Event] = {}
 fixture_response = AssistantResponse(
     answer="First part. Complete answer.",
@@ -45,7 +54,7 @@ fixture_response = AssistantResponse(
 
 class BrowserService:
     def answer_question(self, question, top_k=None, answer_provider=None):
-        return build_default_assistant_service().answer_question(question, top_k, answer_provider)
+        return AssistantService(library=fixture_library).answer_question(question, top_k, answer_provider)
 
     async def stream_question(self, question, top_k=None, answer_provider=None):
         if question not in {"stream success", "stream failure"}:

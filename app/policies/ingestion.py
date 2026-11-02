@@ -8,7 +8,7 @@ from app.policies.extraction import extract_policy
 
 def build_revision(store, policy, settings=None):
     settings = validate_settings(settings or policy['settings'], policy['format'])
-    content = extract_policy(store.original(policy['id']), policy['format'])
+    content = extract_policy(store.directory / policy['file'], policy['format'])
     revision_id = uuid4().hex
     chunks = []
     for section in strategy_sections(content, settings):

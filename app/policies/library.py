@@ -44,13 +44,19 @@ class PolicyLibrary:
     def activate(self, revision, version):
         with self.store.lock:
             policy = self.store.checked(revision['policy_id'], version)
-            chunks = [Chunk(**chunk) for chunk in revision['chunks']]
-            self.indexer.upsert_chunks(chunks)
-            policy.update(revision=revision['id'], chunk_count=len(chunks), status='ready',
-                          settings=revision['settings'], version=version + bool(policy['revision']))
-            self.store.save(policy)
-            self.cleanup()
-            return policy
+            self.stage_revision(revision)
+            return self.publish_revision(revision, policy)
+
+    def stage_revision(self, revision):
+        self.indexer.upsert_chunks([Chunk(**chunk) for chunk in revision['chunks']])
+
+    def publish_revision(self, revision, policy):
+        version = policy['version'] + bool(policy['revision'])
+        policy.update(revision=revision['id'], chunk_count=len(revision['chunks']), status='ready',
+                      settings=revision['settings'], version=version)
+        self.store.save(policy)
+        self.cleanup()
+        return policy
 
     def delete(self, policy_id, version):
         with self.store.lock:
