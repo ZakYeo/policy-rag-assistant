@@ -22,6 +22,7 @@ class RetrievedChunk:
     char_end: int
     text: str
     distance: float
+    location: str = ""
 
 
 class ChunkRetriever:
@@ -95,6 +96,7 @@ class ChunkRetriever:
                     char_end=int(metadata["char_end"]),
                     text=document,
                     distance=float(distance),
+                    location=str(metadata.get("location", "")),
                 )
             )
 

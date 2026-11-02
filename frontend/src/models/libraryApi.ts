@@ -9,6 +9,9 @@ export async function libraryRequest<T>(path: string, options?: RequestInit): Pr
   return response.json() as Promise<T>;
 }
 export const libraryClient: LibraryClient = {
+  upload: (file) => libraryRequest('/api/policies', { method: 'POST', headers: { 'Content-Type': 'application/octet-stream', 'X-Filename': encodeURIComponent(file.name) }, body: file }),
+  operation: (id) => libraryRequest(`/api/operations/${encodeURIComponent(id)}`),
+  retry: (id, version) => libraryRequest(`/api/policies/${encodeURIComponent(id)}/retry`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ version }) }),
   delete: (id, version) => libraryRequest(`/api/policies/${encodeURIComponent(id)}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ version }) }),
   rename: (id, title, version) => libraryRequest(`/api/policies/${encodeURIComponent(id)}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, version }) }),
   list: () => libraryRequest('/api/policies'),

@@ -45,3 +45,17 @@ class PolicyApiTests(unittest.TestCase):
         self.assertEqual(self.client.patch(url, json={'title': 'Stale', 'version': 1}).status_code, 409)
         self.assertEqual(self.client.patch(url, json={'title': '   ', 'version': 2}).status_code, 400)
         self.assertEqual(self.client.patch(url, json={'title': 'Foreign', 'version': 2}, headers={'Origin': 'https://foreign.example'}).status_code, 403)
+
+    def test_upload_download_and_delete_are_connected_to_active_library(self):
+        response = self.client.post('/api/policies', content=b'Keep travel receipts for reimbursement.', headers={'X-Filename': 'travel.txt'})
+        self.assertEqual(response.status_code, 202)
+        operation = self.client.get('/api/operations/' + response.json()['id']).json()
+        self.assertEqual(operation['status'], 'succeeded')
+        url = '/api/policies/' + operation['policy_id']
+        policy = self.client.get(url).json()
+        self.assertEqual(policy['content'][0]['location'], 'Text')
+        original = self.client.get(url + '/original')
+        self.assertEqual(original.content, b'Keep travel receipts for reimbursement.')
+        self.assertIn('attachment', original.headers['content-disposition'])
+        self.assertEqual(self.client.request('DELETE', url, json={'version': policy['version']}).status_code, 200)
+        self.assertEqual(self.client.get(url).status_code, 404)

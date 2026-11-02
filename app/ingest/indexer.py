@@ -40,6 +40,7 @@ class ChunkIndexer:
         metadatas = [
             {
                 "revision": chunk.revision,
+                "location": chunk.location,
                 "document_id": chunk.document_id,
                 "document_name": chunk.document_name,
                 "source_path": chunk.source_path,

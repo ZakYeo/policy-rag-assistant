@@ -1,3 +1,7 @@
+from fastapi import BackgroundTasks
+from urllib.parse import unquote
+from app.policies.operations import MAX_UPLOAD_BYTES, PolicyOperations, validate_filename
+
 from fastapi import Request
 from pydantic import BaseModel, Field
 from app.policies.store import PolicyConflict
@@ -35,7 +39,7 @@ def policy_detail(policy_id: str, library=Depends(library_dependency)):
     policy = find_policy(library, policy_id)
     revision = library.store.revision(policy['revision']) if policy['revision'] else None
     return {**public_policy(policy), 'content': [
-        {'text': page['text'], 'location': f"Page {page['page_number']}"}
+        {'text': page['text'], 'location': page.get('location') or f"Page {page['page_number']}"}
         for page in revision['content']
     ] if revision else []}
 
@@ -106,3 +110,56 @@ def delete_policy(policy_id: str, payload: PolicyVersion, request: Request,
     except PolicyConflict as exc:
         raise HTTPException(409, str(exc)) from exc
     return {'deleted': True}
+
+
+
+operation_router = APIRouter(prefix='/api/operations', tags=['policies'])
+
+
+@router.post('', status_code=202)
+async def upload_policy(request: Request, background: BackgroundTasks,
+                        library=Depends(library_dependency)):
+    same_origin(request)
+    filename = unquote(request.headers.get('x-filename', ''))
+    try:
+        validate_filename(filename)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    content = bytearray()
+    async for block in request.stream():
+        if len(content) + len(block) > MAX_UPLOAD_BYTES:
+            raise HTTPException(413, 'Upload a file of at most 20 MiB.')
+        content.extend(block)
+    try:
+        operations = PolicyOperations(library)
+        operation = operations.upload(filename, bytes(content))
+    except PolicyConflict as exc:
+        raise HTTPException(409, str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    background.add_task(operations.run, operation['id'])
+    return operation
+
+
+@operation_router.get('/{operation_id}')
+def operation_status(operation_id: str, library=Depends(library_dependency)):
+    try:
+        return PolicyOperations(library).get(operation_id)
+    except KeyError as exc:
+        raise HTTPException(404, 'Operation not found.') from exc
+
+
+@router.post('/{policy_id}/retry', status_code=202)
+def retry_policy(policy_id: str, payload: PolicyVersion, request: Request, background: BackgroundTasks,
+                 library=Depends(library_dependency)):
+    same_origin(request)
+    with library.store.lock:
+        policy = find_policy(library, policy_id)
+        if policy['version'] != payload.version or policy['status'] != 'failed':
+            raise HTTPException(409, 'Refresh the policy before retrying processing.')
+        policy['status'] = 'processing'
+        library.store.save(policy)
+        operations = PolicyOperations(library)
+        operation = operations.start(policy)
+    background.add_task(operations.run, operation['id'])
+    return operation

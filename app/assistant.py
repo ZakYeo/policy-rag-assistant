@@ -117,6 +117,7 @@ class AssistantService:
                     "document_name": source.document_name,
                     "page_number": source.page_number,
                     "chunk_id": source.chunk_id,
+                    "location": next((getattr(chunk, "location", "") for chunk in prepared.chunks if chunk.chunk_id == source.chunk_id), ""),
                 }
                 for source in answer_result.sources
             ],
@@ -131,6 +132,7 @@ def _serialize_chunk(chunk: RetrievedChunk) -> dict[str, object]:
         "page_number": chunk.page_number,
         "chunk_index": chunk.chunk_index,
         "distance": chunk.distance,
+        "location": getattr(chunk, "location", ""),
         "text": chunk.text,
     }
 

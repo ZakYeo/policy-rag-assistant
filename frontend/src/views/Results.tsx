@@ -26,7 +26,7 @@ export function Results({ vm }: { vm: DeskViewModel }) {
         {vm.busy && !vm.response ? <Skeleton rows={6} /> : vm.passages.length ? <div className="reveal space-y-4">{vm.passages.map((item) =>
           <blockquote key={item.chunk_id} className="rounded border-l-2 border-accent bg-paper p-4">
             <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2 text-sm">
-              <span className="min-w-0 font-semibold text-accent [overflow-wrap:anywhere]">{item.title}</span><span className="text-muted">Page {item.page_number}</span>
+              <span className="min-w-0 font-semibold text-accent [overflow-wrap:anywhere]">{item.title}</span><span className="text-muted">{item.location || `Page ${item.page_number}`}</span>
             </div><p className="text-base leading-relaxed italic [overflow-wrap:anywhere]">“{item.text}”</p>
           </blockquote>)}</div> : <Empty>{vm.response ? 'No supporting passages were found.' : 'No supporting passages yet.'}</Empty>}
       </Panel>
@@ -37,7 +37,7 @@ export function Results({ vm }: { vm: DeskViewModel }) {
         {vm.busy && !vm.response ? <Skeleton rows={5} /> : vm.references.length ? <ul className="reveal space-y-3">{vm.references.map((item) =>
           <li key={item.chunk_id} className="rounded border border-line-subtle bg-paper p-4">
             <div className="mb-2 flex flex-wrap items-start justify-between gap-2"><strong className="min-w-0 font-semibold [overflow-wrap:anywhere]">{item.title}</strong>
-              <span className="rounded border border-line bg-inset px-2 py-0.5 text-sm text-muted">Page {item.page_number}</span></div>
+              <span className="rounded border border-line bg-inset px-2 py-0.5 text-sm text-muted">{item.location || `Page ${item.page_number}`}</span></div>
             <p className="technical-text">{item.document_name}</p><p className="technical-text mt-1">Chunk: {item.chunk_id}</p>
           </li>)}</ul> : <Empty>{vm.response ? 'No references were found for this answer.' : 'No references yet.'}</Empty>}
       </Panel>

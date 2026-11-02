@@ -9,6 +9,11 @@ export function PolicyLibrary({ vm }: { vm: LibraryViewModel }) {
   return <main id="main" className="page-width flex-1 py-10 min-[640px]:py-12">
     <h1 className="text-[1.8rem] font-bold tracking-tight">Manage policies</h1>
     <p className="mt-2 mb-8 text-lg text-muted">Review the policies that inform NorthStar’s guidance.</p>
+    <form onSubmit={(event) => { event.preventDefault(); void vm.upload(); }} className="mb-7 rounded-lg border border-line bg-card p-5 shadow-sm">
+      <h2 className="font-bold">Upload a policy</h2><p className="mt-1 text-sm text-muted">PDF, HTML or UTF-8 text · up to 20 MiB · readable text required</p>
+      <div className="mt-4 flex flex-wrap items-end gap-4"><label className="min-w-0 flex-1 text-sm font-semibold">Policy file<input type="file" accept=".pdf,.html,.htm,.txt" disabled={vm.busy} className={`${fieldStyle} file:mr-3 file:rounded file:border-0 file:bg-inset file:px-3 file:py-1 file:text-ink`} onChange={(event) => vm.setFile(event.target.files?.[0] ?? null)} /></label><button className={primaryButton} disabled={!vm.file || vm.busy}>Upload policy</button></div>
+    </form>
+    {vm.operation && <p role="status" className="mb-5 rounded border border-line bg-inset p-4 text-sm">{vm.operation.stage}{vm.operation.status === 'failed' ? ' — see details below.' : ''}</p>}
     {vm.error && <div role="alert" className="mb-6 rounded border border-error bg-error-surface p-4 text-error">{vm.error} <button className="underline" onClick={() => void vm.refresh()}>Refresh policies</button></div>}
     <div className="grid min-w-0 items-start gap-7 min-[960px]:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
       <section aria-labelledby="policies-heading" className="min-w-0 rounded-lg border border-line bg-card p-5 shadow-sm">
@@ -26,6 +31,7 @@ export function PolicyLibrary({ vm }: { vm: LibraryViewModel }) {
         {vm.loading ? <Skeleton rows={7} /> : vm.detail ? <>
           <h2 className="text-xl font-bold [overflow-wrap:anywhere]">{vm.detail.title}</h2>
           <p className="technical-text mt-2">{vm.detail.filename}</p>
+          {vm.detail.status === 'failed' && <div className="mt-4 rounded border border-error p-4"><p className="mb-3 text-sm text-error">This policy could not be processed. Check the original file, retry or delete it.</p><button className={secondaryButton} disabled={vm.busy} onClick={() => void vm.retry()}>Retry processing</button></div>}
           <form className="mt-5 flex flex-wrap items-end gap-3" onSubmit={(event) => { event.preventDefault(); void vm.rename(); }}>
             <label className="min-w-0 flex-1 text-sm font-semibold">Display title<input className={fieldStyle} value={vm.title} maxLength={160} required disabled={vm.busy} onChange={(event) => vm.setTitle(event.target.value)} /></label>
             <button type="submit" disabled={vm.busy || !vm.title.trim() || vm.title.trim() === vm.detail.title} className={secondaryButton}>Save title</button>

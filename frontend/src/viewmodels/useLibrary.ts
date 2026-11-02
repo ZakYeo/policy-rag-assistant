@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import type { ChunkPage, LibraryClient, LibraryViewModel, ManagedPolicy, PolicyDetail } from '../contracts/library';
+import type { ChunkPage, LibraryClient, LibraryViewModel, ManagedPolicy, PolicyDetail, PolicyOperation } from '../contracts/library';
 
 export function useLibrary(client: LibraryClient): LibraryViewModel {
   const [policies, setPolicies] = useState<ManagedPolicy[]>([]);
@@ -9,6 +9,8 @@ export function useLibrary(client: LibraryClient): LibraryViewModel {
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<LibraryViewModel['tab']>('content');
   const selection = useRef(0);
+  const [file, setFile] = useState<File | null>(null);
+  const [operation, setOperation] = useState<PolicyOperation | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [title, setTitle] = useState('');
   const [busy, setBusy] = useState(false);
@@ -48,5 +50,34 @@ export function useLibrary(client: LibraryClient): LibraryViewModel {
     catch (reason) { setError(reason instanceof Error ? reason.message : 'Unable to delete policy.'); }
     finally { setBusy(false); }
   }
-  return { confirmDelete, setConfirmDelete, deletePolicy, title, setTitle, rename, busy, policies, detail, chunks, loading, error, tab, refresh, select, setTab, loadChunks };
+  useEffect(() => {
+    if (!operation || !['queued', 'running'].includes(operation.status)) return;
+    const timer = setTimeout(() => {
+      void client.operation(operation.id).then(async (next) => {
+        setOperation(next);
+        if (next.status === 'succeeded' || next.status === 'failed') {
+          setBusy(false); await refresh(); await select(next.policy_id);
+          if (next.error) setError(next.error);
+        }
+      }).catch((reason: unknown) => {
+        setBusy(false); setOperation(null);
+        setError(reason instanceof Error ? reason.message : 'Unable to check processing. Refresh policies.');
+      });
+    }, 700);
+    return () => clearTimeout(timer);
+  }, [operation, client]); // eslint-disable-line react-hooks/exhaustive-deps
+  async function upload() {
+    if (!file || busy) return;
+    if (file.size > 20 * 1024 * 1024 || !file.size) { setError('Upload a non-empty file of at most 20 MiB.'); return; }
+    setBusy(true); setError(null);
+    try { setOperation(await client.upload(file)); setFile(null); await refresh(); }
+    catch (reason) { setBusy(false); setError(reason instanceof Error ? reason.message : 'Unable to upload policy.'); }
+  }
+  async function retry() {
+    if (!detail || busy) return;
+    setBusy(true); setError(null);
+    try { setOperation(await client.retry(detail.id, detail.version)); }
+    catch (reason) { setBusy(false); setError(reason instanceof Error ? reason.message : 'Unable to retry processing.'); }
+  }
+  return { file, setFile, upload, retry, operation, confirmDelete, setConfirmDelete, deletePolicy, title, setTitle, rename, busy, policies, detail, chunks, loading, error, tab, refresh, select, setTab, loadChunks };
 }

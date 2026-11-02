@@ -1,15 +1,14 @@
 from __future__ import annotations
 
 from contextlib import contextmanager
-from dataclasses import asdict, replace
+import json
+from app.ingest.chunker import Chunk
 from functools import lru_cache
 import logging
 from pathlib import Path
-from uuid import uuid4
 
+from app.policies.ingestion import build_revision
 from app.config import get_settings
-from app.ingest.chunker import chunk_documents
-from app.ingest.extractor import extract_document
 from app.ingest.indexer import ChunkIndexer
 from app.policies.store import PolicyStore
 from app.retrieval.catalog import PolicyDocument
@@ -26,6 +25,8 @@ class PolicyLibrary:
 
     def initialize(self):
         with self.store.lock:
+            from app.policies.operations import PolicyOperations
+            PolicyOperations(self).recover()
             self.store.import_existing(self.documents_dir)
             for policy in self.store.list():
                 if not policy['revision'] and policy['status'] == 'pending':
@@ -34,19 +35,11 @@ class PolicyLibrary:
     def reindex(self, policy_id):
         with self.store.lock:
             policy = self.store.get(policy_id)
-            document = extract_document(self.store.original(policy_id))
-            document = replace(document, document_id=policy_id, document_name=policy['filename'])
-            revision_id = uuid4().hex
-            chunks = [replace(chunk, chunk_id=f'{revision_id}:{chunk.chunk_id}', revision=revision_id)
-                      for chunk in chunk_documents([document], policy['settings']['size'], policy['settings']['overlap'])]
-            if not chunks:
-                raise ValueError('The policy contains no readable text.')
-            revision = {'id': revision_id, 'policy_id': policy_id,
-                        'content': [asdict(page) for page in document.pages],
-                        'settings': policy['settings'], 'chunks': [asdict(chunk) for chunk in chunks]}
+            revision = build_revision(self.store, policy)
+            chunks = [Chunk(**chunk) for chunk in revision['chunks']]
             self.store.save_revision(revision)
             self.indexer.upsert_chunks(chunks)
-            policy.update(revision=revision_id, chunk_count=len(chunks), status='ready')
+            policy.update(revision=revision['id'], chunk_count=len(chunks), status='ready')
             self.store.save(policy)
             return policy
 
@@ -61,7 +54,6 @@ class PolicyLibrary:
                 source.unlink(missing_ok=True)
                 with self.store.connect() as db:
                     for revision_id, payload in db.execute('SELECT id, payload FROM revisions').fetchall():
-                        import json
                         if json.loads(payload)['policy_id'] == policy['id']:
                             db.execute('DELETE FROM revisions WHERE id=?', (revision_id,))
             except Exception:

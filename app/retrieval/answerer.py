@@ -69,7 +69,8 @@ class ExtractiveAnswerer:
         answer_parts = []
         sources: list[AnswerSource] = []
         for snippet, chunk in selected_snippets:
-            citation = f"[{chunk.document_name} p.{chunk.page_number}]"
+            location = getattr(chunk, "location", "") or f"p.{chunk.page_number}"
+            citation = f"[{chunk.document_name} {location}]"
             answer_parts.append(f"{snippet} {citation}")
             sources.append(
                 AnswerSource(
@@ -204,7 +205,7 @@ class OpenAIAnswerer:
 
 def _messages(question: str, chunks: list[RetrievedChunk]) -> list[dict[str, str]]:
     context = "\n\n".join(
-        f"Source: {chunk.document_name} page {chunk.page_number}\n{chunk.text}" for chunk in chunks
+        f"Source: {chunk.document_name} {getattr(chunk, 'location', '') or f'page {chunk.page_number}'}\n{chunk.text}" for chunk in chunks
     )
     return [
         {
