@@ -3,6 +3,7 @@ import type { ThemeViewModel } from '../contracts/theme';
 import { Header } from './Header';
 import { QuestionForm } from './QuestionForm';
 import { Results } from './Results';
+import { SampleQuestions } from './SampleQuestions';
 
 export function PolicyDesk({ vm, theme }: { vm: DeskViewModel; theme: ThemeViewModel }) {
   return <>
@@ -14,6 +15,7 @@ export function PolicyDesk({ vm, theme }: { vm: DeskViewModel; theme: ThemeViewM
         <p className="mt-2 text-lg leading-relaxed text-muted">Search workplace standards across information security, acceptable AI use, confidentiality, and data handling.</p>
       </div>
       <QuestionForm vm={vm} />
+      <SampleQuestions groups={vm.sampleQuestionGroups} onSelect={vm.selectSampleQuestion} />
       {vm.error && <p role="alert" className="mb-6 rounded border border-error bg-error-surface p-4 text-error">{vm.error}</p>}
       <p role="status" className="sr-only">{vm.status === 'loading' ? 'Searching NorthStar policies.' : vm.status === 'streaming' ? 'Receiving the answer.' : vm.status === 'success' ? 'Answer and policy references are ready.' : ''}</p>
       <Results vm={vm} />

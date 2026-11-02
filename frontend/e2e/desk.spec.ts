@@ -139,10 +139,57 @@ test('supports keyboard controls and has no extra product actions', async ({ pag
   await page.getByRole('radio', { name: 'AI-assisted (OpenAI)' }).focus();
   await page.keyboard.press('ArrowRight');
   await expect(page.getByRole('radio', { name: 'Direct policy extracts (Extractive)' })).toBeChecked();
-  await expect(page.getByRole('button')).toHaveCount(2);
+  await expect(page.getByRole('button')).toHaveCount(10);
   await expect(page.getByRole('link')).toHaveCount(1);
   await expect(page.getByRole('textbox')).toHaveCount(1);
   await expect(page.getByRole('radio')).toHaveCount(2);
+});
+
+test('sample questions float in the wide margin, reflow inline and only fill the editor', async ({ page }, info) => {
+  let questionRequests = 0;
+  page.on('request', (request) => { if (/\/api\/ask(?:\/stream)?$/.test(request.url())) questionRequests++; });
+  await page.setViewportSize({ width: 1920, height: 700 });
+  await page.goto('/');
+  const samples = page.getByRole('complementary', { name: 'Sample Questions' });
+  await expect(samples.getByRole('heading', { name: 'Everyday questions' })).toBeVisible();
+  await expect(samples.getByRole('heading', { name: 'Across policies' })).toBeVisible();
+  await expect(samples.getByRole('button')).toHaveCount(8);
+  const form = page.getByRole('region', { name: 'Ask a policy question' });
+  const formBox = (await form.boundingBox())!;
+  const panelBox = (await samples.boundingBox())!;
+  expect(panelBox.x).toBeGreaterThanOrEqual(16);
+  expect(panelBox.x + panelBox.width).toBeLessThan(formBox.x);
+  expect(await samples.evaluate((element) => getComputedStyle(element).position)).toBe('fixed');
+  await page.evaluate(() => scrollTo(0, 400));
+  expect((await samples.boundingBox())!.y).toBeCloseTo(panelBox.y, 0);
+  await page.screenshot({ path: info.outputPath('samples-wide-light.png'), fullPage: true });
+  await page.getByRole('radio', { name: 'Direct policy extracts (Extractive)' }).check();
+  const basicQuestion = 'What are our core working hours?';
+  await samples.getByRole('button', { name: basicQuestion, exact: true }).click();
+  await expect(page.getByRole('textbox', { name: 'Your question' })).toHaveValue(basicQuestion);
+  await expect(page.getByRole('textbox', { name: 'Your question' })).toBeFocused();
+  await expect(page.getByRole('radio', { name: 'Direct policy extracts (Extractive)' })).toBeChecked();
+  for (const [width, height] of [[1840, 700], [1839, 700], [1440, 800], [768, 1024], [390, 844], [320, 700], [844, 390]]) {
+    await page.setViewportSize({ width, height });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    if (width < 1840) {
+      const inlineBox = (await samples.boundingBox())!;
+      const currentForm = (await form.boundingBox())!;
+      expect(await samples.evaluate((element) => getComputedStyle(element).position)).not.toBe('fixed');
+      expect(inlineBox.x).toBeCloseTo(currentForm.x, 0);
+      expect(inlineBox.width).toBeCloseTo(currentForm.width, 0);
+      expect(inlineBox.y).toBeGreaterThanOrEqual(currentForm.y + currentForm.height);
+    }
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole('button', { name: 'Switch to dark mode' }).click();
+  const combinedQuestion = 'For remote work, what manager approval and information security controls do I need?';
+  await samples.getByRole('button', { name: combinedQuestion, exact: true }).focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('textbox', { name: 'Your question' })).toHaveValue(combinedQuestion);
+  await expect(page.getByRole('textbox', { name: 'Your question' })).toBeFocused();
+  await page.screenshot({ path: info.outputPath('samples-mobile-dark.png'), fullPage: true });
+  expect(questionRequests).toBe(0);
 });
 
 test('wraps long content and shows honest empty-evidence results', async ({ page }) => {

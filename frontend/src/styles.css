@@ -71,6 +71,21 @@
 
 .skeleton { background: var(--skeleton); animation: skeleton-pulse 1.4s ease-in-out infinite; }
 .reveal { animation: content-reveal 180ms ease-out; }
+/* Keep the question workspace centered. Only use the margin once a whole rail fits. */
+@media (min-width: 1840px) {
+  .sample-panel {
+    position: fixed;
+    top: 7.5rem;
+    left: calc(50% - 55.5rem);
+    width: 15rem;
+    max-height: calc(100dvh - 9rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+    margin-bottom: 0;
+    padding: 1.25rem;
+  }
+}
 @keyframes skeleton-pulse { 50% { opacity: .45; } }
 @keyframes content-reveal { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: translateY(0); } }
 @media (prefers-reduced-motion: reduce) {

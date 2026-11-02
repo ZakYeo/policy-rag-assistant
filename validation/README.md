@@ -24,11 +24,11 @@ Browser screenshots/traces are generated under ignored `frontend/test-results/`;
 
 ## Completed validation
 
-- 48 Python unit tests and 6 isolated RAG integration cases passed.
-- 15 frontend tests, ESLint/MVVM RuleTester, TypeScript checking and the Vite/Tailwind production build passed.
-- All 9 Playwright scenarios passed, covering both themes, screen sizes and resizing, keyboard access, skeletons, real HTTP streaming, partial failures, safe text rendering and long content. The extractive browser case used the real local index.
+- 48 Python unit tests and 8 isolated RAG integration cases passed. The added sample-question checks verify the catalog covers the three current PDFs and all four cross-policy prompts retrieve their declared documents with the local pipeline.
+- 16 frontend tests, ESLint/MVVM RuleTester, TypeScript checking and the Vite/Tailwind production build passed.
+- All 10 Playwright scenarios passed, covering both themes, screen sizes and resizing, keyboard access, skeletons, real HTTP streaming, partial failures, safe text rendering and long content. The extractive browser case used the real local index. Sample-panel checks cover the floating left margin, inline fallback, focus, unchanged answer mode and no automatic requests.
 - A separate bounded live OpenAI browser check passed: answer text was visible before completion, followed by grounded policy evidence. It is not part of CI.
 - All 303 locked npm versions and 138 pinned Python versions passed publication-date checks. npm audit reported zero vulnerabilities.
-- A fresh independent review inspected code and desktop/mobile screenshots and reran deterministic checks. Its two initial minor findings were resolved. Targeted follow-up independently passed all 15 frontend tests and 11 Python streaming tests, approved the fixes with no blockers, and scored the work 95/100.
+- The initial implementation received a fresh independent review of code and desktop/mobile screenshots. Its two minor findings were resolved. Targeted follow-up independently passed the then-current 15 frontend tests and 11 Python streaming tests, approved the fixes with no blockers, and scored that implementation 95/100.
 
 The original untracked design-exploration files remain local. Only the user-selected card-based reference is included with the implementation commits.

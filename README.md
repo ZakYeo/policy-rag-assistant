@@ -10,6 +10,7 @@ It mimics a realistic workplace tool: a user asks natural-language questions abo
 - responsive NorthStar Policy Desk with system-aware light/dark themes and skeleton loading
 - React/TypeScript MVVM frontend with build-time Tailwind and enforced architecture boundaries
 - incremental OpenAI answer streaming with explicit interruption handling
+- sample questions for everyday lookups and guidance spanning multiple policies; selection fills the editor without submitting
 - `POST /api/ask` JSON API for grounded answers
 - local PDF ingestion from the `documents/` directory
 - page-level extraction and chunk-level metadata capture
@@ -163,6 +164,7 @@ Expected behavior:
 - the UI includes an `Answer style` choice with `AI-assisted (OpenAI)` selected by default
 - no answer or evidence is fabricated on first load; submit a question to populate the panels
 - the header theme button follows your system theme initially and remembers your override
+- Sample Questions floats in the left margin when the window is at least 1840px wide; on smaller screens it sits below the question form. Selecting a question fills and focuses the editor without sending a request.
 - `/api/status` returns JSON describing the app status and configured paths
 - `/health` returns a JSON health response such as `{"status":"ok","environment":"development"}`
 
