@@ -1,4 +1,6 @@
-export function Header() {
+import type { ThemeViewModel } from '../contracts/theme';
+
+export function Header({ theme }: { theme: ThemeViewModel }) {
   return <header className="border-b border-line bg-card">
     <div className="page-width flex min-h-20 items-center justify-between gap-4 py-5">
       <div className="flex min-w-0 items-center gap-3">
@@ -9,7 +11,16 @@ export function Header() {
           <span className="text-base text-muted">Policy Desk</span>
         </div>
       </div>
-      <p className="hidden text-sm text-muted min-[768px]:block">Internal policy guidance for employees</p>
+      <div className="flex shrink-0 items-center gap-4">
+        <p className="hidden text-sm text-muted min-[768px]:block">Internal policy guidance for employees</p>
+        <button type="button" onClick={theme.toggle} aria-label={`Switch to ${theme.theme === 'dark' ? 'light' : 'dark'} mode`}
+          title={`Switch to ${theme.theme === 'dark' ? 'light' : 'dark'} mode`}
+          className="flex size-10 items-center justify-center rounded border border-line text-ink hover:bg-inset">
+          {theme.theme === 'dark'
+            ? <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><circle cx="12" cy="12" r="4" /><path d="M12 1v3m0 16v3M1 12h3m16 0h3M4.2 4.2l2.1 2.1m11.4 11.4 2.1 2.1m0-15.6-2.1 2.1M6.3 17.7l-2.1 2.1" /></svg>
+            : <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><path d="M20.5 14.5A9 9 0 0 1 9.5 3.5a9 9 0 1 0 11 11Z" /></svg>}
+        </button>
+      </div>
     </div>
   </header>;
 }

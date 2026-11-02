@@ -1,12 +1,13 @@
 import type { DeskViewModel } from '../contracts/policy';
+import type { ThemeViewModel } from '../contracts/theme';
 import { Header } from './Header';
 import { QuestionForm } from './QuestionForm';
 import { Results } from './Results';
 
-export function PolicyDesk({ vm }: { vm: DeskViewModel }) {
+export function PolicyDesk({ vm, theme }: { vm: DeskViewModel; theme: ThemeViewModel }) {
   return <>
     <a href="#main" className="skip-link">Skip to content</a>
-    <Header />
+    <Header theme={theme} />
     <main id="main" className="page-width flex-1 py-10 min-[640px]:py-12">
       <div className="mb-9">
         <h1 className="text-[1.8rem] leading-tight font-bold tracking-tight">Ask about NorthStar policies</h1>

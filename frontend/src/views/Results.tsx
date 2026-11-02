@@ -28,7 +28,7 @@ export function Results({ vm }: { vm: DeskViewModel }) {
       </Panel>
     </div>
     <aside className="min-w-0 space-y-7" aria-label="Policy evidence">
-      <Panel title="Policy references" meta={vm.response ? `${vm.references.length} references` : undefined} id="references-title">
+      <Panel title="Policy references" meta={vm.response ? `${vm.references.length} reference${vm.references.length === 1 ? '' : 's'}` : undefined} id="references-title">
         <p className="mb-4 text-sm text-muted">Source passages supporting this answer:</p>
         {vm.references.length ? <ul className="space-y-3">{vm.references.map((item) =>
           <li key={item.chunk_id} className="rounded border border-line-subtle bg-paper p-4">

@@ -25,6 +25,8 @@
   --color-error-surface: var(--error-surface);
 }
 
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
 :root {
   color-scheme: light;
   --paper: #faf9f5;
@@ -39,6 +41,22 @@
   --on-accent: #ffffff;
   --error: #a02b2b;
   --error-surface: #fff2ef;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --paper: #151a20;
+  --card: #1e252d;
+  --inset: #171e26;
+  --ink: #ecedf0;
+  --muted: #b0bac5;
+  --line: #3c4651;
+  --line-subtle: #333d48;
+  --accent: #a6c8f5;
+  --accent-hover: #c2d9fa;
+  --on-accent: #152740;
+  --error: #ffc1b6;
+  --error-surface: #3a2426;
 }
 
 @layer base {

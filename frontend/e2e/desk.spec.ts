@@ -22,7 +22,26 @@ test('responds with real API-shaped evidence and adapts when resized', async ({ 
   }
   await page.setViewportSize({ width: 390, height: 844 });
   await page.screenshot({ path: info.outputPath('mobile-light.png'), fullPage: true });
+  await page.getByRole('button', { name: 'Switch to dark mode' }).click();
+  for (const [width, height] of [[320, 720], [768, 1024], [844, 390], [1572, 1000]]) {
+    await page.setViewportSize({ width, height });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await expect(page.locator('.answer-text')).toHaveText(answer.answer);
+  }
+  await page.screenshot({ path: info.outputPath('desktop-dark.png'), fullPage: true });
   expect(failures).toEqual([]);
+});
+
+test('follows system theme until toggled and remembers the override', async ({ page }) => {
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await page.goto('/');
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await page.emulateMedia({ colorScheme: 'light' });
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
+  await page.getByRole('button', { name: 'Switch to dark mode' }).click();
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await expect(page.getByRole('button', { name: 'Switch to light mode' })).toBeVisible();
 });
 
 test('validates blank input and renders extractive content safely', async ({ page }) => {
