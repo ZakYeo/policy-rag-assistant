@@ -1,6 +1,7 @@
 """Deterministic HTTP streaming fixture. Never mounted by the production app."""
 
 import asyncio
+import threading
 from dataclasses import asdict
 from tempfile import TemporaryDirectory
 from pathlib import Path
@@ -17,6 +18,18 @@ from app.web.routes import get_assistant_service
 fixture_directory = TemporaryDirectory(prefix="policy-browser-")
 fixture_library = PolicyLibrary(Path(fixture_directory.name), Path("documents"), LocalHashEmbedder())
 fixture_library.initialize()
+index_gate = threading.Event()
+original_upsert = fixture_library.indexer.upsert_chunks
+
+
+def controlled_upsert(chunks):
+    if any('browser recovery fixture' in chunk.text for chunk in chunks):
+        index_gate.clear()
+        index_gate.wait(20)
+    return original_upsert(chunks)
+
+
+fixture_library.indexer.upsert_chunks = controlled_upsert
 app = create_app()
 app.dependency_overrides[library_dependency] = lambda: fixture_library
 gates: dict[str, asyncio.Event] = {}
@@ -87,3 +100,9 @@ async def release(outcome: str):
 @app.get("/__test__/response")
 def response():
     return asdict(fixture_response)
+
+
+@app.post('/__test__/index-release')
+def release_indexing():
+    index_gate.set()
+    return {'released': True}

@@ -26,3 +26,16 @@ test('a changed setting invalidates its preview and cannot apply unseen changes'
   await act(() => result.current.applyPreview());
   expect(client.apply).not.toHaveBeenCalled();
 });
+
+test('reattaches to a persisted processing operation when the library loads', async () => {
+  const detail: PolicyDetail = { id: 'policy', title: 'Policy', filename: 'policy.txt', format: 'txt', version: 1, revision: 'r1', settings: { strategy: 'characters', size: 900, overlap: 150, heading_depth: 2 }, chunk_count: 1, status: 'ready', content: [] };
+  const operation = { id: 'persisted', policy_id: 'policy', status: 'running', stage: 'Indexing', error: null };
+  const client: LibraryClient = { preview: vi.fn(), previewChunks: vi.fn(), apply: vi.fn(), upload: vi.fn(), retry: vi.fn(), delete: vi.fn(), rename: vi.fn(),
+    list: vi.fn().mockResolvedValueOnce([{ ...detail, status: 'processing', operation_id: 'persisted' }]).mockResolvedValue([detail]),
+    operation: vi.fn().mockResolvedValueOnce(operation).mockResolvedValue({ ...operation, status: 'succeeded' }),
+    detail: vi.fn().mockResolvedValue(detail), chunks: vi.fn().mockResolvedValue({ items: [], offset: 0, total: 0 }) };
+  const { result } = renderHook(() => useLibrary(client));
+  await waitFor(() => expect(result.current.operation?.id).toBe('persisted'));
+  await waitFor(() => expect(result.current.detail?.id).toBe('policy'), { timeout: 3000 });
+  await waitFor(() => expect(result.current.busy).toBe(false));
+});

@@ -78,3 +78,21 @@ test('HTML strategy and safe content, invalid files and duplicates', async ({ pa
   await expect(page.getByRole('button', { name: 'Retry processing' })).toBeVisible({ timeout: 20000 });
   await expect(page.getByRole('alert')).toContainText('PDF');
 });
+
+test('resumes persisted processing after reload and reconnects after a polling failure', async ({ page }) => {
+  await page.goto('/policies');
+  await page.getByLabel('Policy file').setInputFiles({ name: 'recovery-browser.txt', mimeType: 'text/plain', buffer: Buffer.from('browser recovery fixture: retain travel receipts.') });
+  await page.getByRole('button', { name: 'Upload policy', exact: true }).click();
+  await expect(page.getByRole('status')).toContainText(/Waiting to process|Extracting/);
+  await page.reload();
+  let failedOnce = false;
+  await page.route('**/api/operations/*', async (route) => {
+    if (!failedOnce) { failedOnce = true; await route.abort(); } else await route.continue();
+  });
+  try {
+    await expect(page.getByText(/Reconnecting automatically/)).toBeVisible({ timeout: 7000 });
+    await page.request.post('/__test__/index-release');
+    await expect(page.getByRole('heading', { name: 'recovery browser', exact: true })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('button', { name: 'Delete policy', exact: true })).toBeEnabled();
+  } finally { await page.request.post('/__test__/index-release'); }
+});

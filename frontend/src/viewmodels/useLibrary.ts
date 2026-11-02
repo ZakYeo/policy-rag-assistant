@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import type { ChunkPage, LibraryClient, LibraryViewModel, ManagedPolicy, PolicyDetail, PolicyOperation, ChunkSettings, ChunkPreview } from '../contracts/library';
+import { usePolicyOperation } from './usePolicyOperation';
+import type { ChunkPage, LibraryClient, LibraryViewModel, ManagedPolicy, PolicyDetail, ChunkSettings, ChunkPreview } from '../contracts/library';
 
 export function useLibrary(client: LibraryClient): LibraryViewModel {
   const [policies, setPolicies] = useState<ManagedPolicy[]>([]);
@@ -12,17 +13,34 @@ export function useLibrary(client: LibraryClient): LibraryViewModel {
   const [settings, setDraftSettings] = useState<ChunkSettings | null>(null);
   const [preview, setPreview] = useState<ChunkPreview | null>(null);
   const [file, setFile] = useState<File | null>(null);
-  const [operation, setOperation] = useState<PolicyOperation | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [title, setTitle] = useState('');
-  const [busy, setBusy] = useState(false);
+  const [actionBusy, setBusy] = useState(false);
+  const mounted = useRef(true);
+  const processing = usePolicyOperation(client, async (next) => {
+    if (!mounted.current) return;
+    await refresh();
+    if (!mounted.current) return;
+    await select(next.policy_id);
+    if (next.error) setError(next.error);
+  });
+  const busy = actionBusy || processing.pending;
+  const operation = processing.operation;
   async function refresh() {
     setLoading(true); setError(null);
-    try { setPolicies(await client.list()); }
+    try {
+      const next = await client.list();
+      if (!mounted.current) return;
+      setPolicies(next);
+      const pending = next.find((policy) => policy.status === 'processing' && policy.operation_id);
+      if (pending?.operation_id && processing.trackedId.current !== pending.operation_id) {
+        processing.track({ id: pending.operation_id, policy_id: pending.id, status: 'queued', stage: 'Resuming processing status', error: null });
+      }
+    }
     catch (reason) { setError(reason instanceof Error ? reason.message : 'Unable to load policies.'); }
     finally { setLoading(false); }
   }
-  useEffect(() => { void refresh(); }, [client]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { mounted.current = true; void refresh(); return () => { mounted.current = false; ++selection.current; }; }, [client]); // eslint-disable-line react-hooks/exhaustive-deps
   async function select(id: string) {
     const request = ++selection.current;
     setLoading(true); setError(null); setDetail(null); setChunks(null); setPreview(null); setTab('content'); setConfirmDelete(false);
@@ -52,33 +70,17 @@ export function useLibrary(client: LibraryClient): LibraryViewModel {
     catch (reason) { setError(reason instanceof Error ? reason.message : 'Unable to delete policy.'); }
     finally { setBusy(false); }
   }
-  useEffect(() => {
-    if (!operation || !['queued', 'running'].includes(operation.status)) return;
-    const timer = setTimeout(() => {
-      void client.operation(operation.id).then(async (next) => {
-        setOperation(next);
-        if (next.status === 'succeeded' || next.status === 'failed') {
-          setBusy(false); await refresh(); await select(next.policy_id);
-          if (next.error) setError(next.error);
-        }
-      }).catch((reason: unknown) => {
-        setBusy(false); setOperation(null);
-        setError(reason instanceof Error ? reason.message : 'Unable to check processing. Refresh policies.');
-      });
-    }, 700);
-    return () => clearTimeout(timer);
-  }, [operation, client]); // eslint-disable-line react-hooks/exhaustive-deps
   async function upload() {
     if (!file || busy) return;
     if (file.size > 20 * 1024 * 1024 || !file.size) { setError('Upload a non-empty file of at most 20 MiB.'); return; }
     setBusy(true); setError(null);
-    try { setOperation(await client.upload(file)); setFile(null); await refresh(); }
+    try { processing.track(await client.upload(file)); setBusy(false); setFile(null); await refresh(); }
     catch (reason) { setBusy(false); setError(reason instanceof Error ? reason.message : 'Unable to upload policy.'); }
   }
   async function retry() {
     if (!detail || busy) return;
     setBusy(true); setError(null);
-    try { setOperation(await client.retry(detail.id, detail.version)); }
+    try { processing.track(await client.retry(detail.id, detail.version)); setBusy(false); }
     catch (reason) { setBusy(false); setError(reason instanceof Error ? reason.message : 'Unable to retry processing.'); }
   }
   function setSettings(value: ChunkSettings) { setDraftSettings(value); setPreview(null); }
@@ -99,8 +101,8 @@ export function useLibrary(client: LibraryClient): LibraryViewModel {
   async function applyPreview() {
     if (!detail || !preview || busy) return;
     setBusy(true); setError(null);
-    try { setOperation(await client.apply(detail.id, preview.id, detail.version)); }
+    try { processing.track(await client.apply(detail.id, preview.id, detail.version)); setBusy(false); }
     catch (reason) { setBusy(false); setPreview(null); setError(reason instanceof Error ? reason.message : 'Unable to apply chunking.'); }
   }
-  return { settings, setSettings, preview, previewChunks, loadPreview, applyPreview, file, setFile, upload, retry, operation, confirmDelete, setConfirmDelete, deletePolicy, title, setTitle, rename, busy, policies, detail, chunks, loading, error, tab, refresh, select, setTab, loadChunks };
+  return { connectionError: processing.connectionError, settings, setSettings, preview, previewChunks, loadPreview, applyPreview, file, setFile, upload, retry, operation, confirmDelete, setConfirmDelete, deletePolicy, title, setTitle, rename, busy, policies, detail, chunks, loading, error, tab, refresh, select, setTab, loadChunks };
 }

@@ -11,6 +11,7 @@ export function PolicyLibrary({ vm }: { vm: LibraryViewModel }) {
       <h2 className="font-bold">Upload a policy</h2><p className="mt-1 text-sm text-muted">PDF, HTML or UTF-8 text · up to 20 MiB · readable text required</p>
       <div className="mt-4 flex flex-wrap items-end gap-4"><label className="min-w-0 flex-1 text-sm font-semibold">Policy file<input type="file" accept=".pdf,.html,.htm,.txt" disabled={vm.busy} className={`${fieldStyle} file:mr-3 file:rounded file:border-0 file:bg-inset file:px-3 file:py-1 file:text-ink`} onChange={(event) => vm.setFile(event.target.files?.[0] ?? null)} /></label><button className={primaryButton} disabled={!vm.file || vm.busy}>Upload policy</button></div>
     </form>
+    {vm.connectionError && <p role="status" className="mb-4 text-sm text-muted">{vm.connectionError} Reconnecting automatically…</p>}
     {vm.operation && <p role="status" className="mb-5 rounded border border-line bg-inset p-4 text-sm">{vm.operation.stage}{vm.operation.status === 'failed' ? ' — see details below.' : ''}</p>}
     {vm.error && <div role="alert" className="mb-6 rounded border border-error bg-error-surface p-4 text-error">{vm.error} <button className="underline" onClick={() => void vm.refresh()}>Refresh policies</button></div>}
     <div className="grid min-w-0 items-start gap-7 min-[960px]:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
@@ -23,6 +24,7 @@ export function PolicyLibrary({ vm }: { vm: LibraryViewModel }) {
             <span className="mt-2 block text-sm text-muted">{policy.format.toUpperCase()} · {policy.chunk_count} chunks · {policy.status}</span>
           </button>
         </li>)}</ul>}
+        <button className={`${secondaryButton} mt-4`} disabled={vm.loading} onClick={() => void vm.refresh()}>Refresh policies</button>
         {!vm.loading && !vm.policies.length && <p className="mt-4 text-muted">No policies uploaded yet.</p>}
       </section>
       <section aria-label="Selected policy" aria-busy={vm.loading} className="min-w-0 rounded-lg border border-line bg-card p-5 min-[640px]:p-7 shadow-sm">
