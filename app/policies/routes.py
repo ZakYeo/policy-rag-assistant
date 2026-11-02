@@ -57,3 +57,35 @@ def policy_original(policy_id: str, library=Depends(library_dependency)):
     return FileResponse(library.store.original(policy_id), filename=policy['filename'],
                         media_type='application/octet-stream',
                         headers={'X-Content-Type-Options': 'nosniff', 'Content-Security-Policy': "sandbox"})
+
+
+def same_origin(request):
+    from urllib.parse import urlsplit
+    origin = request.headers.get('origin')
+    if request.headers.get('sec-fetch-site') == 'cross-site' or (
+        origin and (urlsplit(origin).scheme, urlsplit(origin).netloc) != (request.url.scheme, request.url.netloc)
+    ):
+        raise HTTPException(403, 'Policy changes must come from this application.')
+
+
+from fastapi import Request
+from pydantic import BaseModel, Field
+from app.policies.store import PolicyConflict
+
+
+class RenamePolicy(BaseModel):
+    title: str = Field(max_length=160)
+    version: int = Field(ge=1)
+
+
+@router.patch('/{policy_id}')
+def rename_policy(policy_id: str, payload: RenamePolicy, request: Request,
+                  library=Depends(library_dependency)):
+    same_origin(request)
+    find_policy(library, policy_id)
+    try:
+        return public_policy(library.store.rename(policy_id, payload.title, payload.version))
+    except PolicyConflict as exc:
+        raise HTTPException(409, str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc

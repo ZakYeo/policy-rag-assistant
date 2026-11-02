@@ -33,3 +33,15 @@ class PolicyApiTests(unittest.TestCase):
         self.assertTrue(chunks['items'])
         self.assertNotIn('source_path', chunks['items'][0])
         self.assertEqual(self.client.get('/api/policies/missing').status_code, 404)
+
+    def test_rename_updates_catalogue_but_keeps_identity_and_rejects_stale_edit(self):
+        policy = self.library.store.list()[0]
+        url = f"/api/policies/{policy['id']}"
+        response = self.client.patch(url, json={'title': 'New policy title', 'version': policy['version']})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['filename'], policy['filename'])
+        with self.library.snapshot() as (documents, _):
+            self.assertEqual(documents[0].title, 'New policy title')
+        self.assertEqual(self.client.patch(url, json={'title': 'Stale', 'version': 1}).status_code, 409)
+        self.assertEqual(self.client.patch(url, json={'title': '   ', 'version': 2}).status_code, 400)
+        self.assertEqual(self.client.patch(url, json={'title': 'Foreign', 'version': 2}, headers={'Origin': 'https://foreign.example'}).status_code, 403)

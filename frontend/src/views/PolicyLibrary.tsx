@@ -26,6 +26,10 @@ export function PolicyLibrary({ vm }: { vm: LibraryViewModel }) {
         {vm.loading ? <Skeleton rows={7} /> : vm.detail ? <>
           <h2 className="text-xl font-bold [overflow-wrap:anywhere]">{vm.detail.title}</h2>
           <p className="technical-text mt-2">{vm.detail.filename}</p>
+          <form className="mt-5 flex flex-wrap items-end gap-3" onSubmit={(event) => { event.preventDefault(); void vm.rename(); }}>
+            <label className="min-w-0 flex-1 text-sm font-semibold">Display title<input className={fieldStyle} value={vm.title} maxLength={160} required disabled={vm.busy} onChange={(event) => vm.setTitle(event.target.value)} /></label>
+            <button type="submit" disabled={vm.busy || !vm.title.trim() || vm.title.trim() === vm.detail.title} className={secondaryButton}>Save title</button>
+          </form>
           <a className="mt-3 inline-block text-sm font-semibold text-accent underline" href={`/api/policies/${encodeURIComponent(vm.detail.id)}/original`}>Download original</a>
           <div className="my-6 flex flex-wrap gap-2 border-b border-line pb-3" aria-label="Policy sections">
             {(['content', 'chunks', 'settings'] as const).map((tab) => <button key={tab} type="button" aria-pressed={vm.tab === tab} className={`${secondaryButton} ${vm.tab === tab ? 'border-accent text-accent' : ''}`} onClick={() => vm.setTab(tab)}>{tab === 'content' ? 'Content' : tab === 'chunks' ? 'Chunks' : 'Chunking settings'}</button>)}

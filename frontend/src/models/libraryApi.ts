@@ -9,6 +9,7 @@ export async function libraryRequest<T>(path: string, options?: RequestInit): Pr
   return response.json() as Promise<T>;
 }
 export const libraryClient: LibraryClient = {
+  rename: (id, title, version) => libraryRequest(`/api/policies/${encodeURIComponent(id)}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, version }) }),
   list: () => libraryRequest('/api/policies'),
   detail: (id) => libraryRequest(`/api/policies/${encodeURIComponent(id)}`),
   chunks: (id, offset) => libraryRequest(`/api/policies/${encodeURIComponent(id)}/chunks?offset=${offset}`),
