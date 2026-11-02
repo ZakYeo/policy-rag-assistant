@@ -5,6 +5,7 @@ import math
 from typing import Protocol
 
 from app.config import get_settings
+from app.retrieval.embedding_inputs import embedding_batches
 
 
 class Embedder(Protocol):
@@ -26,8 +27,33 @@ class OpenAIEmbedder:
         if not texts:
             return []
 
-        response = self._client.embeddings.create(model=self._model, input=texts)
-        return [item.embedding for item in response.data]
+        accumulated: list[list[float] | None] = [None] * len(texts)
+        for batch in embedding_batches(texts):
+            response = self._client.embeddings.create(model=self._model, input=[piece for _, piece, _ in batch])
+            data = sorted(response.data, key=lambda item: item.index)
+            if [item.index for item in data] != list(range(len(batch))):
+                raise RuntimeError('The embedding service returned incomplete vectors.')
+            for (owner, _, weight), item in zip(batch, data):
+                vector = item.embedding
+                if not vector or not all(math.isfinite(value) for value in vector):
+                    raise RuntimeError('The embedding service returned an invalid vector.')
+                total = accumulated[owner]
+                if total is None:
+                    total = accumulated[owner] = [0.0] * len(vector)
+                if len(total) != len(vector):
+                    raise RuntimeError('The embedding service returned inconsistent dimensions.')
+                for index, value in enumerate(vector):
+                    total[index] += value * weight
+        result = []
+        for total in accumulated:
+            if total is None:
+                raise RuntimeError('The embedding service returned no vector.')
+            norm = math.sqrt(sum(value * value for value in total))
+            if not norm:
+                raise RuntimeError('The embedding service returned an empty vector.')
+            # Weighted averaging then normalisation equals normalising the weighted sum.
+            result.append([value / norm for value in total])
+        return result
 
 
 class LocalHashEmbedder:
