@@ -1,3 +1,7 @@
+from fastapi import Request
+from pydantic import BaseModel, Field
+from app.policies.store import PolicyConflict
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import FileResponse
 
@@ -68,9 +72,6 @@ def same_origin(request):
         raise HTTPException(403, 'Policy changes must come from this application.')
 
 
-from fastapi import Request
-from pydantic import BaseModel, Field
-from app.policies.store import PolicyConflict
 
 
 class RenamePolicy(BaseModel):
@@ -89,3 +90,19 @@ def rename_policy(policy_id: str, payload: RenamePolicy, request: Request,
         raise HTTPException(409, str(exc)) from exc
     except ValueError as exc:
         raise HTTPException(400, str(exc)) from exc
+
+
+class PolicyVersion(BaseModel):
+    version: int = Field(ge=1)
+
+
+@router.delete('/{policy_id}')
+def delete_policy(policy_id: str, payload: PolicyVersion, request: Request,
+                  library=Depends(library_dependency)):
+    same_origin(request)
+    find_policy(library, policy_id)
+    try:
+        library.delete(policy_id, payload.version)
+    except PolicyConflict as exc:
+        raise HTTPException(409, str(exc)) from exc
+    return {'deleted': True}

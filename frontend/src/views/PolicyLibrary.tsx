@@ -31,6 +31,12 @@ export function PolicyLibrary({ vm }: { vm: LibraryViewModel }) {
             <button type="submit" disabled={vm.busy || !vm.title.trim() || vm.title.trim() === vm.detail.title} className={secondaryButton}>Save title</button>
           </form>
           <a className="mt-3 inline-block text-sm font-semibold text-accent underline" href={`/api/policies/${encodeURIComponent(vm.detail.id)}/original`}>Download original</a>
+          <div className="mt-5">
+            {vm.confirmDelete ? <div role="group" aria-label="Confirm policy deletion" className="rounded border border-error bg-error-surface p-4">
+              <p className="text-error [overflow-wrap:anywhere]">Delete “{vm.detail.title}”? Its file and chunks will be removed from future answers.</p>
+              <div className="mt-3 flex flex-wrap gap-3"><button className={secondaryButton} disabled={vm.busy} onClick={() => void vm.deletePolicy()}>Confirm delete</button><button className={secondaryButton} disabled={vm.busy} onClick={() => vm.setConfirmDelete(false)}>Cancel</button></div>
+            </div> : <button className={`${secondaryButton} text-error`} disabled={vm.busy} onClick={() => vm.setConfirmDelete(true)}>Delete policy</button>}
+          </div>
           <div className="my-6 flex flex-wrap gap-2 border-b border-line pb-3" aria-label="Policy sections">
             {(['content', 'chunks', 'settings'] as const).map((tab) => <button key={tab} type="button" aria-pressed={vm.tab === tab} className={`${secondaryButton} ${vm.tab === tab ? 'border-accent text-accent' : ''}`} onClick={() => vm.setTab(tab)}>{tab === 'content' ? 'Content' : tab === 'chunks' ? 'Chunks' : 'Chunking settings'}</button>)}
           </div>

@@ -3,6 +3,7 @@ from __future__ import annotations
 from contextlib import contextmanager
 from dataclasses import asdict, replace
 from functools import lru_cache
+import logging
 from pathlib import Path
 from uuid import uuid4
 
@@ -48,6 +49,23 @@ class PolicyLibrary:
             policy.update(revision=revision_id, chunk_count=len(chunks), status='ready')
             self.store.save(policy)
             return policy
+
+    def delete(self, policy_id, version):
+        with self.store.lock:
+            policy = self.store.checked(policy_id, version)
+            source = self.store.original(policy_id)
+            self.store.remove(policy_id)
+            # Deactivation happens first; cleanup cannot restore searchable content.
+            try:
+                self.indexer.delete_document(policy_id)
+                source.unlink(missing_ok=True)
+                with self.store.connect() as db:
+                    for revision_id, payload in db.execute('SELECT id, payload FROM revisions').fetchall():
+                        import json
+                        if json.loads(payload)['policy_id'] == policy['id']:
+                            db.execute('DELETE FROM revisions WHERE id=?', (revision_id,))
+            except Exception:
+                logging.getLogger(__name__).exception('Deleted policy cleanup will be retried at startup')
 
     @contextmanager
     def snapshot(self):

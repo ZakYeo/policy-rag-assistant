@@ -59,6 +59,9 @@ class ChunkIndexer:
         )
         return len(chunks)
 
+    def delete_document(self, document_id: str) -> None:
+        self._collection.delete(where={"document_id": document_id})
+
     def count(self) -> int:
         return self._collection.count()
 

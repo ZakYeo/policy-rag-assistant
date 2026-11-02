@@ -9,6 +9,7 @@ export function useLibrary(client: LibraryClient): LibraryViewModel {
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<LibraryViewModel['tab']>('content');
   const selection = useRef(0);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [title, setTitle] = useState('');
   const [busy, setBusy] = useState(false);
   async function refresh() {
@@ -20,7 +21,7 @@ export function useLibrary(client: LibraryClient): LibraryViewModel {
   useEffect(() => { void refresh(); }, [client]); // eslint-disable-line react-hooks/exhaustive-deps
   async function select(id: string) {
     const request = ++selection.current;
-    setLoading(true); setError(null); setDetail(null); setChunks(null); setTab('content');
+    setLoading(true); setError(null); setDetail(null); setChunks(null); setTab('content'); setConfirmDelete(false);
     try {
       const [next, page] = await Promise.all([client.detail(id), client.chunks(id, 0)]);
       if (request === selection.current) { setDetail(next); setTitle(next.title); setChunks(page); }
@@ -40,5 +41,12 @@ export function useLibrary(client: LibraryClient): LibraryViewModel {
     catch (reason) { setError(reason instanceof Error ? reason.message : 'Unable to rename policy.'); }
     finally { setBusy(false); }
   }
-  return { title, setTitle, rename, busy, policies, detail, chunks, loading, error, tab, refresh, select, setTab, loadChunks };
+  async function deletePolicy() {
+    if (!detail || busy || !confirmDelete) return;
+    setBusy(true); setError(null);
+    try { await client.delete(detail.id, detail.version); ++selection.current; setDetail(null); setChunks(null); setConfirmDelete(false); await refresh(); }
+    catch (reason) { setError(reason instanceof Error ? reason.message : 'Unable to delete policy.'); }
+    finally { setBusy(false); }
+  }
+  return { confirmDelete, setConfirmDelete, deletePolicy, title, setTitle, rename, busy, policies, detail, chunks, loading, error, tab, refresh, select, setTab, loadChunks };
 }

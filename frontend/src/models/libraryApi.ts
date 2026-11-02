@@ -9,6 +9,7 @@ export async function libraryRequest<T>(path: string, options?: RequestInit): Pr
   return response.json() as Promise<T>;
 }
 export const libraryClient: LibraryClient = {
+  delete: (id, version) => libraryRequest(`/api/policies/${encodeURIComponent(id)}`, { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ version }) }),
   rename: (id, title, version) => libraryRequest(`/api/policies/${encodeURIComponent(id)}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ title, version }) }),
   list: () => libraryRequest('/api/policies'),
   detail: (id) => libraryRequest(`/api/policies/${encodeURIComponent(id)}`),

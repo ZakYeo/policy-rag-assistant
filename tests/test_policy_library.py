@@ -33,3 +33,17 @@ class PolicyLibraryTests(unittest.TestCase):
                 with self.assertRaises(RuntimeError):
                     library.reindex(policy['id'])
             self.assertEqual(library.store.get(policy['id'])['revision'], original)
+
+    def test_delete_deactivates_policy_and_removes_stored_source_and_vectors(self):
+        with tempfile.TemporaryDirectory() as directory:
+            library = self.library(directory)
+            library.initialize()
+            policy = library.store.list()[0]
+            source = library.store.original(policy['id'])
+            library.delete(policy['id'], policy['version'])
+            self.assertFalse(source.exists())
+            with library.snapshot() as (documents, retriever):
+                self.assertNotIn(policy['id'], [doc.document_id for doc in documents])
+                self.assertEqual(retriever.retrieve_filtered('AI', 4, [policy['id']]), [])
+            library.initialize()
+            self.assertEqual(len(library.store.list()), 2)
