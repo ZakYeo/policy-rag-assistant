@@ -24,9 +24,9 @@ export function Results({ vm }: { vm: DeskViewModel }) {
         {vm.busy && !vm.response ? <Skeleton rows={6} /> : vm.passages.length ? <div className="reveal space-y-4">{vm.passages.map((item) =>
           <blockquote key={item.chunk_id} className="rounded border-l-2 border-accent bg-paper p-4">
             <div className="mb-2 flex flex-wrap items-baseline justify-between gap-2 text-sm">
-              <span className="font-semibold text-accent">{item.title}</span><span className="text-muted">Page {item.page_number}</span>
+              <span className="min-w-0 font-semibold text-accent [overflow-wrap:anywhere]">{item.title}</span><span className="text-muted">Page {item.page_number}</span>
             </div><p className="text-base leading-relaxed italic [overflow-wrap:anywhere]">“{item.text}”</p>
-          </blockquote>)}</div> : <Empty>No supporting passages yet.</Empty>}
+          </blockquote>)}</div> : <Empty>{vm.response ? 'No supporting passages were found.' : 'No supporting passages yet.'}</Empty>}
       </Panel>
     </div>
     <aside className="min-w-0 space-y-7" aria-label="Policy evidence">
@@ -34,16 +34,16 @@ export function Results({ vm }: { vm: DeskViewModel }) {
         <p className="mb-4 text-sm text-muted">Source passages supporting this answer:</p>
         {vm.busy && !vm.response ? <Skeleton rows={5} /> : vm.references.length ? <ul className="reveal space-y-3">{vm.references.map((item) =>
           <li key={item.chunk_id} className="rounded border border-line-subtle bg-paper p-4">
-            <div className="mb-2 flex flex-wrap items-start justify-between gap-2"><strong className="font-semibold">{item.title}</strong>
+            <div className="mb-2 flex flex-wrap items-start justify-between gap-2"><strong className="min-w-0 font-semibold [overflow-wrap:anywhere]">{item.title}</strong>
               <span className="rounded border border-line bg-inset px-2 py-0.5 text-sm text-muted">Page {item.page_number}</span></div>
             <p className="technical-text">{item.document_name}</p><p className="technical-text mt-1">Chunk: {item.chunk_id}</p>
-          </li>)}</ul> : <Empty>No references yet.</Empty>}
+          </li>)}</ul> : <Empty>{vm.response ? 'No references were found for this answer.' : 'No references yet.'}</Empty>}
       </Panel>
       <Panel title="Policies consulted" id="consulted-title">
         {vm.busy && !vm.response ? <Skeleton /> : vm.response?.routed_documents.length ? <ul className="reveal space-y-4">{vm.response.routed_documents.map((doc) =>
           <li key={doc.document_id} className="flex items-start gap-2"><span aria-hidden="true" className="mt-2 size-1.5 shrink-0 rounded-full bg-muted" />
             <div className="min-w-0"><p className="font-semibold [overflow-wrap:anywhere]">{doc.title}</p><p className="technical-text">{doc.document_name}</p></div>
-          </li>)}</ul> : <Empty>No policies consulted yet.</Empty>}
+          </li>)}</ul> : <Empty>{vm.response ? 'No policies were selected for this question.' : 'No policies consulted yet.'}</Empty>}
       </Panel>
       <details open className="px-1 text-sm text-muted">
         <summary className="cursor-pointer py-2 font-medium">Technical details</summary>

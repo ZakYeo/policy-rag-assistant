@@ -117,6 +117,16 @@
       "publishedAt": "2026-10-05T19:38:28.330Z"
     },
     {
+      "name": "@cacheable/memory",
+      "version": "2.2.0",
+      "publishedAt": "2026-06-27T18:19:57.669Z"
+    },
+    {
+      "name": "@cacheable/utils",
+      "version": "2.5.0",
+      "publishedAt": "2026-06-27T18:19:51.509Z"
+    },
+    {
       "name": "@csstools/color-helpers",
       "version": "6.1.2",
       "publishedAt": "2026-09-25T14:20:23.103Z"
@@ -173,38 +183,33 @@
     },
     {
       "name": "@eslint/config-array",
-      "version": "0.21.2",
-      "publishedAt": "2026-03-06T19:44:45.893Z"
+      "version": "0.23.5",
+      "publishedAt": "2026-04-08T09:22:37.796Z"
     },
     {
       "name": "@eslint/config-helpers",
-      "version": "0.4.2",
-      "publishedAt": "2025-10-29T14:21:41.669Z"
+      "version": "0.7.0",
+      "publishedAt": "2026-07-21T08:10:35.250Z"
     },
     {
       "name": "@eslint/core",
-      "version": "0.17.0",
-      "publishedAt": "2025-10-29T14:21:34.375Z"
-    },
-    {
-      "name": "@eslint/eslintrc",
-      "version": "3.3.7",
-      "publishedAt": "2026-09-01T13:42:47.191Z"
+      "version": "1.2.1",
+      "publishedAt": "2026-04-08T09:22:28.287Z"
     },
     {
       "name": "@eslint/js",
-      "version": "9.39.5",
-      "publishedAt": "2026-07-10T20:16:17.272Z"
+      "version": "10.0.1",
+      "publishedAt": "2026-02-06T22:34:56.290Z"
     },
     {
       "name": "@eslint/object-schema",
-      "version": "2.1.7",
-      "publishedAt": "2025-10-17T17:58:12.617Z"
+      "version": "3.0.5",
+      "publishedAt": "2026-04-08T09:22:34.549Z"
     },
     {
       "name": "@eslint/plugin-kit",
-      "version": "0.4.1",
-      "publishedAt": "2025-10-29T14:21:48.301Z"
+      "version": "0.7.3",
+      "publishedAt": "2026-09-03T18:10:03.592Z"
     },
     {
       "name": "@exodus/bytes",
@@ -247,6 +252,11 @@
       "publishedAt": "2025-05-07T14:25:57.372Z"
     },
     {
+      "name": "@isaacs/nonrecursive-glob-match",
+      "version": "1.0.3",
+      "publishedAt": "2026-10-28T19:50:48.349Z"
+    },
+    {
       "name": "@jridgewell/gen-mapping",
       "version": "0.3.13",
       "publishedAt": "2025-08-12T06:43:21.134Z"
@@ -270,6 +280,16 @@
       "name": "@jridgewell/trace-mapping",
       "version": "0.3.31",
       "publishedAt": "2025-09-10T20:12:49.468Z"
+    },
+    {
+      "name": "@keyv/bigmap",
+      "version": "1.3.1",
+      "publishedAt": "2026-01-21T00:47:42.392Z"
+    },
+    {
+      "name": "@keyv/serialize",
+      "version": "1.1.1",
+      "publishedAt": "2025-09-10T16:09:07.731Z"
     },
     {
       "name": "@napi-rs/wasm-runtime",
@@ -482,6 +502,11 @@
       "publishedAt": "2023-11-07T01:34:12.026Z"
     },
     {
+      "name": "@types/esrecurse",
+      "version": "4.3.1",
+      "publishedAt": "2025-07-19T03:47:09.775Z"
+    },
+    {
       "name": "@types/estree",
       "version": "1.0.10",
       "publishedAt": "2026-10-29T04:34:27.999Z"
@@ -593,18 +618,8 @@
     },
     {
       "name": "ansi-styles",
-      "version": "4.3.0",
-      "publishedAt": "2020-10-04T19:18:25.986Z"
-    },
-    {
-      "name": "ansi-styles",
       "version": "5.2.0",
       "publishedAt": "2021-03-31T07:15:34.766Z"
-    },
-    {
-      "name": "argparse",
-      "version": "2.0.1",
-      "publishedAt": "2020-08-28T21:14:26.713Z"
     },
     {
       "name": "aria-query",
@@ -615,11 +630,6 @@
       "name": "assertion-error",
       "version": "2.0.1",
       "publishedAt": "2023-10-18T18:04:13.507Z"
-    },
-    {
-      "name": "balanced-match",
-      "version": "1.0.2",
-      "publishedAt": "2021-04-06T12:51:09.276Z"
     },
     {
       "name": "balanced-match",
@@ -638,11 +648,6 @@
     },
     {
       "name": "brace-expansion",
-      "version": "1.1.21",
-      "publishedAt": "2026-09-14T21:59:28.332Z"
-    },
-    {
-      "name": "brace-expansion",
       "version": "5.0.12",
       "publishedAt": "2026-09-14T21:59:00.288Z"
     },
@@ -652,9 +657,9 @@
       "publishedAt": "2026-10-26T18:51:08.696Z"
     },
     {
-      "name": "callsites",
-      "version": "3.1.0",
-      "publishedAt": "2019-04-06T11:57:30.657Z"
+      "name": "cacheable",
+      "version": "2.5.0",
+      "publishedAt": "2026-06-27T18:20:16.235Z"
     },
     {
       "name": "caniuse-lite",
@@ -665,26 +670,6 @@
       "name": "chai",
       "version": "6.3.0",
       "publishedAt": "2026-09-30T19:18:04.368Z"
-    },
-    {
-      "name": "chalk",
-      "version": "4.1.2",
-      "publishedAt": "2021-07-30T12:02:52.839Z"
-    },
-    {
-      "name": "color-convert",
-      "version": "2.0.1",
-      "publishedAt": "2019-08-19T21:05:36.605Z"
-    },
-    {
-      "name": "color-name",
-      "version": "1.1.4",
-      "publishedAt": "2018-09-21T10:48:56.546Z"
-    },
-    {
-      "name": "concat-map",
-      "version": "0.0.1",
-      "publishedAt": "2014-01-30T03:06:35.982Z"
     },
     {
       "name": "convert-source-map",
@@ -783,8 +768,8 @@
     },
     {
       "name": "eslint",
-      "version": "9.39.5",
-      "publishedAt": "2026-07-10T20:41:47.507Z"
+      "version": "10.13.0",
+      "publishedAt": "2026-10-16T14:24:10.765Z"
     },
     {
       "name": "eslint-plugin-react-hooks",
@@ -793,8 +778,8 @@
     },
     {
       "name": "eslint-scope",
-      "version": "8.4.0",
-      "publishedAt": "2025-06-09T15:46:11.133Z"
+      "version": "9.1.2",
+      "publishedAt": "2026-03-06T22:32:49.946Z"
     },
     {
       "name": "eslint-visitor-keys",
@@ -803,18 +788,13 @@
     },
     {
       "name": "eslint-visitor-keys",
-      "version": "4.2.1",
-      "publishedAt": "2025-06-09T15:45:52.557Z"
-    },
-    {
-      "name": "eslint-visitor-keys",
       "version": "5.0.1",
       "publishedAt": "2026-02-20T14:40:47.824Z"
     },
     {
       "name": "espree",
-      "version": "10.4.0",
-      "publishedAt": "2025-06-09T15:46:03.805Z"
+      "version": "11.2.0",
+      "publishedAt": "2026-03-06T22:32:40.951Z"
     },
     {
       "name": "esquery",
@@ -868,8 +848,8 @@
     },
     {
       "name": "file-entry-cache",
-      "version": "8.0.0",
-      "publishedAt": "2023-12-18T19:33:58.734Z"
+      "version": "11.1.5",
+      "publishedAt": "2026-06-27T18:20:33.507Z"
     },
     {
       "name": "find-up",
@@ -878,8 +858,8 @@
     },
     {
       "name": "flat-cache",
-      "version": "4.0.1",
-      "publishedAt": "2024-03-02T16:09:41.118Z"
+      "version": "6.1.23",
+      "publishedAt": "2026-06-27T18:20:27.613Z"
     },
     {
       "name": "flatted",
@@ -903,11 +883,6 @@
     },
     {
       "name": "globals",
-      "version": "14.0.0",
-      "publishedAt": "2024-02-10T15:40:47.985Z"
-    },
-    {
-      "name": "globals",
       "version": "17.13.0",
       "publishedAt": "2026-10-01T03:57:11.938Z"
     },
@@ -917,9 +892,9 @@
       "publishedAt": "2023-03-16T19:30:19.323Z"
     },
     {
-      "name": "has-flag",
-      "version": "4.0.0",
-      "publishedAt": "2019-04-06T15:49:21.907Z"
+      "name": "hashery",
+      "version": "1.5.1",
+      "publishedAt": "2026-03-21T18:01:50.476Z"
     },
     {
       "name": "hermes-estree",
@@ -930,6 +905,16 @@
       "name": "hermes-parser",
       "version": "0.25.1",
       "publishedAt": "2024-11-12T01:39:43.468Z"
+    },
+    {
+      "name": "hookified",
+      "version": "1.15.1",
+      "publishedAt": "2026-01-31T20:19:44.222Z"
+    },
+    {
+      "name": "hookified",
+      "version": "2.2.0",
+      "publishedAt": "2026-04-26T22:05:22.580Z"
     },
     {
       "name": "html-encoding-sniffer",
@@ -945,11 +930,6 @@
       "name": "ignore",
       "version": "7.0.14",
       "publishedAt": "2026-10-23T23:24:50.714Z"
-    },
-    {
-      "name": "import-fresh",
-      "version": "3.3.1",
-      "publishedAt": "2025-02-02T09:45:41.743Z"
     },
     {
       "name": "imurmurhash",
@@ -992,11 +972,6 @@
       "publishedAt": "2018-01-28T11:58:58.170Z"
     },
     {
-      "name": "js-yaml",
-      "version": "4.3.2",
-      "publishedAt": "2026-08-26T20:42:48.747Z"
-    },
-    {
       "name": "jsdom",
       "version": "29.1.1",
       "publishedAt": "2026-04-30T08:52:48.353Z"
@@ -1005,11 +980,6 @@
       "name": "jsesc",
       "version": "3.1.0",
       "publishedAt": "2024-12-11T08:24:34.551Z"
-    },
-    {
-      "name": "json-buffer",
-      "version": "3.0.1",
-      "publishedAt": "2018-09-10T19:02:16.381Z"
     },
     {
       "name": "json-schema-traverse",
@@ -1028,8 +998,8 @@
     },
     {
       "name": "keyv",
-      "version": "4.5.4",
-      "publishedAt": "2023-10-07T16:53:54.487Z"
+      "version": "5.6.0",
+      "publishedAt": "2026-01-21T00:39:26.982Z"
     },
     {
       "name": "levn",
@@ -1162,11 +1132,6 @@
       "publishedAt": "2020-08-10T17:49:10.766Z"
     },
     {
-      "name": "lodash.merge",
-      "version": "4.6.2",
-      "publishedAt": "2019-07-10T00:19:41.667Z"
-    },
-    {
       "name": "lru-cache",
       "version": "11.5.3",
       "publishedAt": "2026-09-18T23:46:33.023Z"
@@ -1203,13 +1168,8 @@
     },
     {
       "name": "minimatch",
-      "version": "10.2.6",
-      "publishedAt": "2026-07-27T19:00:09.469Z"
-    },
-    {
-      "name": "minimatch",
-      "version": "3.1.5",
-      "publishedAt": "2026-02-25T17:17:15.626Z"
+      "version": "11.0.3",
+      "publishedAt": "2026-10-28T20:00:34.713Z"
     },
     {
       "name": "ms",
@@ -1250,11 +1210,6 @@
       "name": "p-locate",
       "version": "5.0.0",
       "publishedAt": "2020-08-10T17:42:34.692Z"
-    },
-    {
-      "name": "parent-module",
-      "version": "1.0.1",
-      "publishedAt": "2019-03-28T11:33:52.331Z"
     },
     {
       "name": "parse5",
@@ -1312,6 +1267,11 @@
       "publishedAt": "2023-10-30T18:28:32.512Z"
     },
     {
+      "name": "qified",
+      "version": "0.10.1",
+      "publishedAt": "2026-04-24T22:37:10.101Z"
+    },
+    {
       "name": "react",
       "version": "19.3.1",
       "publishedAt": "2026-10-14T16:47:15.290Z"
@@ -1335,11 +1295,6 @@
       "name": "require-from-string",
       "version": "2.0.2",
       "publishedAt": "2018-04-09T09:49:47.301Z"
-    },
-    {
-      "name": "resolve-from",
-      "version": "4.0.0",
-      "publishedAt": "2017-09-23T09:48:16.876Z"
     },
     {
       "name": "rolldown",
@@ -1390,16 +1345,6 @@
       "name": "strip-indent",
       "version": "3.0.0",
       "publishedAt": "2019-04-17T02:21:49.701Z"
-    },
-    {
-      "name": "strip-json-comments",
-      "version": "3.1.1",
-      "publishedAt": "2020-07-12T14:44:56.568Z"
-    },
-    {
-      "name": "supports-color",
-      "version": "7.2.0",
-      "publishedAt": "2020-08-28T11:17:34.870Z"
     },
     {
       "name": "symbol-tree",

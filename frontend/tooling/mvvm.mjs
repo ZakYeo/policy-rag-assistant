@@ -78,8 +78,15 @@ export default {
         }
       },
       CallExpression(node) {
+        if (node.callee.name === 'require' && node.arguments[0]) imports({ ...node, source: node.arguments[0] });
         if (['views', 'viewmodels', 'contracts'].includes(layer) && browserIO.has(node.callee.name)) {
           report(node, 'Browser I/O belongs in Models.');
+        }
+      },
+      VariableDeclarator(node) {
+        if (['views', 'viewmodels', 'contracts'].includes(layer) && node.init?.type === 'Identifier'
+            && (browserIO.has(node.init.name) || ['globalThis', 'self'].includes(node.init.name))) {
+          report(node, 'Browser I/O aliases belong in Models.');
         }
       },
     };

@@ -168,7 +168,7 @@ class OpenAIAnswerer:
         parts: list[str] = []
         finish_reason = None
         try:
-            async with AsyncOpenAI(api_key=self._api_key) as client:
+            async with AsyncOpenAI(api_key=self._api_key, timeout=60, max_retries=0) as client:
                 async with await client.chat.completions.create(
                     model=self._model,
                     temperature=0,

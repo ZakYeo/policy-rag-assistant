@@ -127,3 +127,39 @@ test('extractive mode works against the real local policy index', async ({ page 
   await expect(page.getByRole('heading', { name: 'Policy references' })).toBeVisible();
   await expect(page.getByText('Extractive', { exact: true })).toBeVisible();
 });
+
+test('supports keyboard controls and has no extra product actions', async ({ page }) => {
+  await page.goto('/');
+  await page.keyboard.press('Tab');
+  await expect(page.getByRole('link', { name: 'Skip to content' })).toBeFocused();
+  await page.getByRole('button', { name: 'Switch to dark mode' }).focus();
+  await page.keyboard.press('Space');
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  await page.getByRole('radio', { name: 'AI-assisted (OpenAI)' }).focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(page.getByRole('radio', { name: 'Direct policy extracts (Extractive)' })).toBeChecked();
+  await expect(page.getByRole('button')).toHaveCount(2);
+  await expect(page.getByRole('link')).toHaveCount(1);
+  await expect(page.getByRole('textbox')).toHaveCount(1);
+  await expect(page.getByRole('radio')).toHaveCount(2);
+});
+
+test('wraps long content and shows honest empty-evidence results', async ({ page }) => {
+  const longName = 'northstar-' + 'policy'.repeat(100) + '.pdf';
+  await page.route('**/api/ask', (route) => route.fulfill({ json: {
+    ...answer, answer_provider: 'extractive', answer: 'longword'.repeat(500),
+    sources: [{ ...answer.sources[0], document_name: longName, chunk_id: 'chunk'.repeat(100) }],
+    routed_documents: [], retrieved_chunks: [],
+  } }));
+  await page.setViewportSize({ width: 320, height: 700 });
+  await page.goto('/');
+  await page.getByRole('radio', { name: 'Direct policy extracts (Extractive)' }).check();
+  await page.getByRole('textbox', { name: 'Your question' }).fill('Long answer');
+  await page.getByRole('button', { name: 'Ask a question', exact: true }).click();
+  await expect(page.locator('.answer-text')).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.route('**/api/ask', (route) => route.fulfill({ json: { ...answer, answer_provider: 'extractive', answer: 'No policy context was found.', sources: [], routed_documents: [], retrieved_chunks: [] } }));
+  await page.getByRole('button', { name: 'Ask a question', exact: true }).click();
+  await expect(page.locator('.answer-text')).toHaveText('No policy context was found.');
+  await expect(page.getByText('No references were found for this answer.')).toBeVisible();
+});

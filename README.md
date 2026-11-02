@@ -7,6 +7,9 @@ It mimics a realistic workplace tool: a user asks natural-language questions abo
 ## Capabilities And Features
 
 - browser-based UI for asking policy questions
+- responsive NorthStar Policy Desk with system-aware light/dark themes and skeleton loading
+- React/TypeScript MVVM frontend with build-time Tailwind and enforced architecture boundaries
+- incremental OpenAI answer streaming with explicit interruption handling
 - `POST /api/ask` JSON API for grounded answers
 - local PDF ingestion from the `documents/` directory
 - page-level extraction and chunk-level metadata capture
@@ -99,18 +102,25 @@ If you are already using the environment and want to leave it later:
 deactivate
 ```
 
-### 2. Install the project
+### 2. Install the pinned project environment
 
-With the virtual environment activated:
+Verify that every pinned Python package meets the release-age policy, then install the
+validated backend, build and test environment without resolving newer dependencies:
 
 ```bash
-python3 -m pip install -e .
+python3 scripts/check_python_release_dates.py
+python3 -m pip install --no-deps -r requirements-ci.txt
+python3 -m pip install --no-deps --no-build-isolation -e .
 ```
 
-If you want to run the full test toolchain, including the RAGAS-based integration evaluation:
+Build the frontend with Node.js 22.19 or newer (within the supported Node 22 line):
 
 ```bash
-python3 -m pip install -e ".[dev]"
+cd frontend
+node tooling/check-release-dates.mjs
+npm ci
+npm run build
+cd ..
 ```
 
 ### 3. Configure environment variables
@@ -132,9 +142,10 @@ The current FastAPI app exposes:
 - `GET /` for the browser demo UI
 - `GET /api/status` for basic app status and paths
 - `POST /api/ask` for the grounded question-answer API
+- `POST /api/ask/stream` for incremental OpenAI answers over server-sent events
 - `GET /health` for a simple health check
 
-Run the app locally with:
+After building the frontend, run the app locally with:
 
 ```bash
 uvicorn app.main:app --reload
@@ -149,7 +160,9 @@ Then test it manually:
 Expected behavior:
 
 - `/` shows a browser-based policy assistant UI
-- the UI includes an `Answer mode` toggle with `OpenAI` selected by default
+- the UI includes an `Answer style` choice with `AI-assisted (OpenAI)` selected by default
+- no answer or evidence is fabricated on first load; submit a question to populate the panels
+- the header theme button follows your system theme initially and remembers your override
 - `/api/status` returns JSON describing the app status and configured paths
 - `/health` returns a JSON health response such as `{"status":"ok","environment":"development"}`
 
@@ -160,10 +173,15 @@ The browser UI lets you choose between two answer modes:
 - `OpenAI`: sends the retrieved chunks to the backend OpenAI chat provider for a more natural response
 - `Extractive`: returns a grounded extractive answer built directly from the retrieved chunks without calling OpenAI
 
+This selection controls answer generation only. Document routing can still use OpenAI
+in either mode, according to `ROUTER_PROVIDER`.
+
 Important notes:
 
 - the API key stays on the backend only and is never exposed to the frontend
 - the frontend sends only the selected answer mode, never any secret
+- OpenAI text appears progressively; evidence and counts arrive with the completed response
+- interrupted text remains visible and clearly marked incomplete; resubmission is manual
 - if `OpenAI` is selected but the backend is missing `OPENAI_API_KEY`, lacks network access, or hits provider errors, the UI shows the backend error message instead of silently failing
 
 ## Document Routing
@@ -397,3 +415,23 @@ The current integration cases cover:
 - there is no conversation memory yet
 - there is no authentication or multi-user support yet
 - document updates still require manual re-indexing
+
+## Frontend development and validation
+
+Run FastAPI on port 8000 and `npm run dev` from `frontend/` for Vite development with
+API proxying. The build emits assets into `app/web/static/`, which FastAPI serves at
+the same origin. Rebuild after UI changes when reviewing the backend-served app.
+
+Models own API, stream parsing and browser preferences. ViewModel hooks own application
+state and actions. Views receive presentation state and callbacks. The composition root
+wires the layers together. `npm run lint` enforces and tests these boundaries.
+
+Frontend checks, from `frontend/`: `npm run lint`, `npm test`, `npm run build`,
+`npm run test:e2e`. Playwright covers responsive layouts, both themes, loading, streaming,
+error recovery and safe text rendering. See [validation notes](validation/README.md)
+for package-date evidence and the separate optional live OpenAI check.
+
+The streaming endpoint accepts the existing ask request and emits `delta` events with
+`{ "text": "..." }`, followed by one terminal `result` containing the existing full
+answer response, or a terminal `error` with `{ "message": "..." }`. Clients must treat
+EOF without a result as interruption. The JSON ask endpoint remains compatible.
