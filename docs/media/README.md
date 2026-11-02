@@ -14,6 +14,25 @@ were mocked. The video is silent, 1440×1000, approximately 15 seconds, in WebM/
 - `live-question-preview.gif`: lower-resolution animated preview for GitHub Markdown.
 - `live-demo-poster.png`: a decoded final frame from the recording.
 
+## Screenshots
+
+### Policy Desk
+
+![Completed live answer with supporting policy passages](policy-desk-light.png)
+
+### Policy management
+
+![Policy library and editable chunking controls](manage-policies-light.png)
+
+<details>
+<summary>Dark theme and mobile layout</summary>
+
+![Policy Desk in dark mode](policy-desk-dark.png)
+
+<img src="policy-desk-mobile-dark.png" width="390" alt="Policy Desk on a narrow mobile screen in dark mode" />
+
+</details>
+
 ## Reproduce
 
 Use the project's existing pinned dependencies and build the frontend first. Run

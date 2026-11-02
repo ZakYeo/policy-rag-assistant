@@ -1,523 +1,103 @@
-# Policy RAG Assistant
+# NorthStar Policy Desk
 
-A small demo project for an internal policy assistant powered by retrieval-augmented generation (RAG).
+A demo internal policy app that answers workplace questions using retrieval-augmented generation (RAG), with source passages you can inspect.
 
-It mimics a realistic workplace tool: a user asks natural-language questions about company policies, the system retrieves relevant passages from internal policy documents, and the answer is generated from that retrieved context instead of relying on general knowledge alone.
+**NorthStar is a fictional company. All bundled policies and examples are made up for this demo.**
 
-## Capabilities And Features
+## What it does
 
-- browser-based UI for asking policy questions
-- responsive NorthStar Policy Desk with system-aware light/dark themes and skeleton loading
-- React/TypeScript MVVM frontend with build-time Tailwind and enforced architecture boundaries
-- incremental OpenAI answer streaming with explicit interruption handling
-- sample questions for everyday lookups and guidance spanning multiple policies; selection fills the editor without submitting
-- policy management for PDF, HTML and text uploads, display titles, deletion and original-file downloads
-- configurable chunking with source inspection, preview/apply and revision-safe indexing
-- `POST /api/ask` JSON API for grounded answers
-- local PDF ingestion from the `documents/` directory
-- page-level extraction and chunk-level metadata capture
-- document routing before chunk retrieval
-- local Chroma vector indexing
-- selectable answer modes: `openai` and `extractive`
-- inline source references and surfaced retrieved chunks
-- backend-only handling of OpenAI credentials
-- isolated RAG integration tests against the current fake PDF corpus
-- unit test coverage across ingestion, routing, retrieval, answering, and API behavior
+- **Ask questions:** stream an OpenAI answer or read direct policy extracts, with citations and supporting passages.
+- **Manage policies:** upload PDF, HTML or text files; read, rename and delete policies.
+- **Inspect retrieval:** browse chunks and preview changes to character, sentence, paragraph or HTML-section splitting before applying them.
+- **Use any screen:** responsive layouts, light/dark themes and loading skeletons.
 
+The sample corpus covers AI acceptable use, information security and an employee handbook.
 
+## See it in action
 
-## Screenshots and live demo
+[![Live question, streamed answer and policy references](docs/media/live-question-preview.gif)](docs/media/live-question-demo.webm)
 
-Captured with Playwright against the running app and its synthetic NorthStar policies.
+[Watch the full-resolution video](docs/media/live-question-demo.webm) · [Browse screenshots](docs/media/README.md#screenshots)
 
-### Live question demonstration
+- Recorded with Playwright against the running app.
+- Uses a real OpenAI response and the fictional sample policies; no mocked answers.
 
-[![Watch a real question receive streamed OpenAI guidance and policy references](docs/media/live-question-preview.gif)](docs/media/live-question-demo.webm)
+## Run locally
 
-[Open the full-resolution video](docs/media/live-question-demo.webm) · [Download WebM](https://raw.githubusercontent.com/ZakYeo/policy-rag-assistant/refs/heads/main/docs/media/live-question-demo.webm)
-
-This silent, 15-second recording submits a real question, receives an OpenAI answer
-as it streams, and shows the supporting policy references. It also visits dark mode,
-the mobile layout and policy management. The answer is live, with no mocked responses.
-The animated preview plays directly in this README; the full-resolution WebM is available for playback or download.
-
-### Policy Desk
-
-![NorthStar Policy Desk with a completed live answer and supporting policy evidence](docs/media/policy-desk-light.png)
-
-### Policy management
-
-![NorthStar policy library with document details and configurable chunking settings](docs/media/manage-policies-light.png)
-
-<details>
-<summary>Dark theme and mobile layout</summary>
-
-![Policy Desk in dark mode with the same live answer](docs/media/policy-desk-dark.png)
-
-<img src="docs/media/policy-desk-mobile-dark.png" width="390" alt="Responsive Policy Desk on a narrow mobile screen in dark mode" />
-
-</details>
-
-Capture and playback-validation commands are documented in [the media notes](docs/media/README.md).
-
-## Current Document Set
-
-Policy source documents currently live in [`documents/`](documents/):
-
-- `northstar-ai-acceptable-use-policy.pdf`
-- `northstar-employee-handbook.pdf`
-- `northstar-information-security-policy.pdf`
-
-These are intentionally fake sample PDFs created for the demo. They act as the project’s internal policy corpus for retrieval and answering.
-
-## User Flow
-
-The current application flow is:
-
-1. A user asks a question such as "Can I use public AI tools with company data?"
-2. The backend routes the question to the most relevant policy document or documents.
-3. Chunk retrieval runs only against those routed documents.
-4. The selected answer mode generates a grounded response from the retrieved chunks.
-5. The UI shows the answer, routed documents, sources, and retrieved chunk context.
-
-## Non-Goals For The First Iteration
-
-To keep the demo focused, the initial version should avoid production concerns such as:
-
-- authentication and access control
-- multi-user document management
-- advanced observability
-- continuous document syncing from external systems
-- complex agent behavior
-
-## Repository Status
-
-This repository contains a working policy assistant and policy-management interface.
-
-Current setup includes:
-
-- Python project configuration in `pyproject.toml`
-- a FastAPI app with both API and browser entrypoints
-- environment-based configuration via `.env`
-- an initial PDF extraction pipeline in `app/ingest/`
-- a chunking step that produces chunk-level metadata for later retrieval
-- local Chroma indexing with configurable embedding providers
-- document routing that can choose relevant PDFs before chunk retrieval
-- retrieval and grounded answer generation services
-- a React/TypeScript MVVM interface in `frontend/`
-- persistent policy management and revision publication in `app/policies/`
-- backend unit and API regression coverage in `tests/`
-- a separate RAG integration test suite in `integration_tests/`
-
-The app is now a working MVP prototype. It can ingest the local policy PDFs, build a local vector index, route each question to the most relevant documents, retrieve matching chunks, and return grounded answers through both a JSON API and a simple browser UI.
-
-## Initial Project Structure
-
-- `app/` application package
-- `app/ingest/` extraction, chunking, and indexing CLI logic
-- `app/retrieval/` document catalog, routing, embedding, retrieval, and answer generation logic
-- `app/assistant.py` orchestration service for end-to-end question answering
-- `app/web/` FastAPI routes
-- `documents/` source policy PDFs
-- `data/` local generated artifacts such as the vector store
-- `integration_tests/` end-to-end RAG tests for the current sample corpus
-- `scripts/` repo-local test runner commands
-- `tests/` unit tests for ingestion, retrieval, API behavior, and answer generation
-
-## Quickstart
-
-### 1. Create and activate a virtual environment
+**Requirements:** Python 3.12 and Node.js 22.19+ within the Node 22 line. The pinned environment is tested on Linux/WSL.
 
 ```bash
-python3 -m venv .venv
+git clone https://github.com/ZakYeo/policy-rag-assistant.git
+cd policy-rag-assistant
+python3.12 -m venv .venv
 source .venv/bin/activate
-```
 
-If you are already using the environment and want to leave it later:
+python scripts/check_python_release_dates.py
+python -m pip install --no-deps -r requirements-ci.txt
+python -m pip install --no-deps --no-build-isolation -e .
 
-```bash
-deactivate
-```
-
-### 2. Install the pinned project environment
-
-Verify that every pinned Python package meets the release-age policy, then install the
-validated backend, build and test environment without resolving newer dependencies:
-
-```bash
-python3 scripts/check_python_release_dates.py
-python3 -m pip install --no-deps -r requirements-ci.txt
-python3 -m pip install --no-deps --no-build-isolation -e .
-```
-
-Build the frontend with Node.js 22.19 or newer (within the supported Node 22 line):
-
-```bash
 cd frontend
 node tooling/check-release-dates.mjs
 npm ci
 npm run build
 cd ..
-```
 
-### 3. Configure environment variables
-
-Copy [`.env.example`](.env.example) to `.env` and set your real `OPENAI_API_KEY`.
-
-Example:
-
-```bash
 cp .env.example .env
 ```
 
-The default MVP answer mode is now `openai`, while embeddings still default to the local provider. That means the browser UI will try to use OpenAI for answer generation unless you switch it to `extractive`. You can control both behaviors through environment variables.
-
-## Current App Surface
-
-The current FastAPI app exposes:
-
-- `GET /` for the policy question page
-- `GET /policies` for policy management
-- `/api/policies` for policy content, uploads, metadata, deletion, chunks and preview/apply
-- `GET /api/operations/{id}` for persisted processing status
-- `GET /api/status` for basic app status and paths
-- `POST /api/ask` for the grounded question-answer API
-- `POST /api/ask/stream` for incremental OpenAI answers over server-sent events
-- `GET /health` for a simple health check
-
-After building the frontend, run the app locally with:
+- Set `OPENAI_API_KEY` in `.env`. Credentials stay on the backend.
+- The date checks verify dependencies were released at least four days before installation, using the repository's frozen cutoff.
+- No API key? Follow the [local-only setup](docs/development.md#run-without-openai).
 
 ```bash
 uvicorn app.main:app --reload
 ```
 
-Then test it manually:
+Open **[localhost:8000](http://localhost:8000)**. The three sample PDFs are imported and indexed automatically on first use.
 
-- open `http://127.0.0.1:8000/`
-- open `http://127.0.0.1:8000/api/status`
-- open `http://127.0.0.1:8000/health`
+- Try: **“Can I put customer data into a public AI tool?”**
+- Open **Manage policies** to inspect the documents and experiment with chunking.
 
-Expected behavior:
+## How it works
 
-- `/` shows a browser-based policy assistant UI
-- the UI includes an `Answer style` choice with `AI-assisted (OpenAI)` selected by default
-- no answer or evidence is fabricated on first load; submit a question to populate the panels
-- the header theme button follows your system theme initially and remembers your override
-- Sample Questions floats in the left margin when the window is at least 1840px wide; on smaller screens it sits below the question form. Selecting a question fills and focuses the editor without sending a request.
-- `/api/status` returns JSON describing the app status and configured paths
-- `/health` returns a JSON health response such as `{"status":"ok","environment":"development"}`
+```mermaid
+flowchart TB
+    UI["Frontend: React + TypeScript<br/>MVVM · Tailwind"]
 
-### UI Answer Mode Toggle
+    subgraph Backend["Backend: Python · FastAPI"]
+        API["HTTP API"]
+        subgraph Ingestion["Policy ingestion"]
+            Extract["Extract PDF, HTML or text"] --> Chunk["Chunk and preview"]
+            Chunk --> Embed["Embed and stage chunks"] --> Publish["Publish active revision"]
+        end
+        subgraph Retrieval["Question answering"]
+            Route["Route question to policies"] --> Retrieve["Retrieve relevant active chunks"]
+            Retrieve --> Answer["Stream OpenAI answer<br/>or return direct extracts"]
+        end
+        API -->|Upload / apply| Extract
+        API -->|Question| Route
+    end
 
-The browser UI lets you choose between two answer modes:
-
-- `OpenAI`: sends the retrieved chunks to the backend OpenAI chat provider for a more natural response
-- `Extractive`: returns a grounded extractive answer built directly from the retrieved chunks without calling OpenAI
-
-This selection controls answer generation only. Document routing can still use OpenAI
-in either mode, according to `ROUTER_PROVIDER`.
-
-Important notes:
-
-- the API key stays on the backend only and is never exposed to the frontend
-- the frontend sends only the selected answer mode, never any secret
-- OpenAI text appears progressively; evidence and counts arrive with the completed response
-- interrupted text remains visible and clearly marked incomplete; resubmission is manual
-- if `OpenAI` is selected but the backend is missing `OPENAI_API_KEY`, lacks network access, or hits provider errors, the UI shows the backend error message instead of silently failing
-
-## Document Routing
-
-Before chunk retrieval runs, the backend now performs a document-routing step to decide which policy PDFs are relevant to the user’s question.
-
-Current behavior:
-
-- the router can use OpenAI to choose the most relevant documents from the policy catalog
-- if OpenAI routing is unavailable, the backend falls back to a heuristic router
-- chunk retrieval then runs only against the routed documents instead of the full corpus
-
-This keeps retrieval narrower and more intentional, especially as the document set grows.
-
-## PDF Extraction
-
-The repository now includes an initial extraction step for local policy PDFs.
-
-With the virtual environment activated, run:
-
-```bash
-policy-rag-extract
+    UI --> API
+    Publish --> Storage[("Local storage<br/>Original files · SQLite · Chroma")]
+    Storage -->|Policy catalogue| Route
+    Storage -->|Chunks and vectors| Retrieve
+    Answer -->|Answer and references| UI
 ```
 
-This command:
+- **Ingestion:** previewing leaves search unchanged; applying publishes a revision after indexing succeeds.
+- **Retrieval:** questions search active chunks from the selected policies. Answers include source references.
+- **Defaults:** local embeddings, OpenAI routing and OpenAI answers. [Provider configuration](docs/development.md#configuration).
 
-- reads all `*.pdf` files from `documents/`
-- extracts text page by page
-- normalizes whitespace
-- preserves document name and page number metadata
-- writes the result to `data/extracted/documents.json`
+## Documentation
 
-To inspect the generated extraction output:
+- [Development guide](docs/development.md): configuration, API examples, CLI ingestion and test commands.
+- [Policy management](docs/policy-management.md): upload limits, chunking strategies, revisions and storage.
+- [Validation notes](validation/README.md): test coverage, dependency checks and review results.
+- [Demo media](docs/media/README.md): screenshots and reproducible capture instructions.
 
-```bash
-sed -n '1,80p' data/extracted/documents.json
-```
+## Demo limits
 
-You can also override paths:
-
-```bash
-policy-rag-extract --documents-dir documents --output data/extracted/documents.json
-```
-
-## Chunking
-
-The repository now includes a chunking step built on top of the extracted page text.
-
-With the virtual environment activated, run:
-
-```bash
-policy-rag-chunk
-```
-
-This command:
-
-- reads the local PDFs from `documents/`
-- extracts text page by page
-- splits each page into overlapping chunks
-- preserves chunk metadata including document name, page number, chunk index, and character offsets
-- writes the result to `data/chunks/chunks.json`
-
-You can adjust chunking parameters:
-
-```bash
-policy-rag-chunk --chunk-size 900 --chunk-overlap 150
-```
-
-## Indexing
-
-The repository now includes a local indexing command that writes chunk embeddings to Chroma.
-
-With the virtual environment activated, run:
-
-```bash
-policy-rag-index --reset
-```
-
-This command:
-
-- reads the local PDFs from `documents/`
-- extracts and chunks the source text
-- creates embeddings using the configured embedding provider
-- upserts chunk records into the local Chroma store at `data/chroma/`
-
-Notes:
-
-- the default prototype mode uses `EMBEDDING_PROVIDER=local`
-- the default answer mode uses `ANSWER_PROVIDER=openai`
-- set `EMBEDDING_PROVIDER=openai` to use the configured OpenAI embedding model
-- set `ANSWER_PROVIDER=extractive` if you want non-LLM answers by default
-- OpenAI answering requires a valid `OPENAI_API_KEY` and network access
-- `--reset` clears the current collection before re-indexing
-
-## Manual Testing
-
-The smallest manual test loop right now is:
-
-1. Activate the virtual environment.
-2. Start the FastAPI app with `uvicorn app.main:app --reload`.
-3. Run `policy-rag-extract`.
-4. Run `policy-rag-chunk`.
-5. Run `policy-rag-index --reset` once to build the local index.
-6. Open `/` in a browser, keep `OpenAI` selected or switch to `Extractive`, and ask a policy question.
-7. Check `/api/status` and `/health`.
-8. Optionally hit `POST /api/ask` directly.
-9. Inspect the generated JSON artifacts and local vector store to confirm indexing completed.
-
-Example commands:
-
-```bash
-source .venv/bin/activate
-uvicorn app.main:app --reload
-```
-
-In another terminal:
-
-```bash
-source .venv/bin/activate
-policy-rag-index --reset
-curl http://127.0.0.1:8000/api/status
-curl http://127.0.0.1:8000/health
-curl -X POST http://127.0.0.1:8000/api/ask \
-  -H 'content-type: application/json' \
-  -d '{"question":"Can I put customer data into a public AI tool?","answer_provider":"openai"}'
-curl -X POST http://127.0.0.1:8000/api/ask \
-  -H 'content-type: application/json' \
-  -d '{"question":"Can I put customer data into a public AI tool?","answer_provider":"extractive"}'
-policy-rag-extract
-sed -n '1,80p' data/extracted/documents.json
-policy-rag-chunk
-sed -n '1,120p' data/chunks/chunks.json
-```
-
-## Unit Tests
-
-The regular unit test suite covers the internal building blocks of the app and runs separately from the RAG integration suite.
-
-Run it with:
-
-```bash
-source .venv/bin/activate
-python3 -m unittest discover -s tests -v
-```
-
-The current unit tests cover:
-
-- app setup and route smoke behavior
-- assistant orchestration and API response shaping
-- whitespace normalization in extraction
-- extraction output serialization
-- real PDF extraction across the current `documents/` directory
-- chunk generation and chunk metadata capture
-- Chroma indexing, metadata persistence, and reset behavior
-- retrieval ranking and metadata return
-- document routing and router fallback behavior
-- grounded answer generation with source metadata
-- backend error handling for answer-provider failures
-
-## RAG Integration Tests
-
-The integration suite validates the actual MVP RAG pipeline against the current sample PDFs and produces a timestamped JSON report for each run.
-
-Each run:
-
-- extracts the PDFs from `documents/`
-- chunks the extracted text
-- embeds and indexes the chunks into a temporary local Chroma store
-- runs sample policy questions through routing, retrieval, and extractive answering
-- checks the returned answers and routed documents against expected outcomes for this corpus
-- scores the run with RAGAS metrics and compares the summary values to thresholds
-
-The test workspace is isolated per run and uses a temporary directory, so it does not mutate the main app data under `data/`.
-
-Run the integration suite with the repo-local command:
-
-```bash
-./scripts/run_rag_integration_tests.sh
-```
-
-If you have installed the project entrypoints into your virtual environment, you can also run:
-
-```bash
-policy-rag-integration-tests
-```
-
-By default, the command runs:
-
-- the end-to-end integration tests in `integration_tests/`
-- deterministic RAGAS retrieval metrics:
-- `id_based_context_precision`
-- `id_based_context_recall`
-- `nonllm_context_precision`
-- `nonllm_context_recall`
-
-Each run writes a report to `data/rag-test-reports/` using the format:
-
-```text
-rag-test-run-YYYYMMDD-HHMMSS.json
-```
-
-If you want to include the OpenAI-backed RAGAS answer-quality metrics as well, enable them explicitly:
-
-```bash
-RAGAS_ENABLE_LLM_METRICS=1 ./scripts/run_rag_integration_tests.sh
-```
-
-When enabled, the report also includes:
-
-- `faithfulness`
-- `answer_relevancy`
-
-This opt-in mode requires a valid backend `OPENAI_API_KEY` and network access. The default integration command keeps those LLM metrics disabled so the suite remains fast and runnable in offline environments.
-
-The current integration cases cover:
-
-- prohibited public-AI use with customer data
-- employee core working hours
-- lost company laptop incident reporting
-- password-sharing guidance
-- remote-work allowance rules
-
-
-
-## Current Limitations
-
-- OpenAI is the default answer mode, so missing backend API configuration will surface as an explicit UI/API error until you configure it or switch to `extractive`
-- the extractive fallback is grounded but less fluent than an LLM-backed answer
-- the browser UI is intentionally simple and built for demo use
-- there is no conversation memory yet
-- there is no authentication or multi-user support yet
-- run one application process; multi-process indexing coordination is not implemented
-- scanned PDFs require OCR before upload; Word documents are not supported
-
-## Frontend development and validation
-
-Run FastAPI on port 8000 and `npm run dev` from `frontend/` for Vite development with
-API proxying. The build emits assets into `app/web/static/`, which FastAPI serves at
-the same origin. Rebuild after UI changes when reviewing the backend-served app.
-
-Models own API, stream parsing and browser preferences. ViewModel hooks own application
-state and actions. Views receive presentation state and callbacks. The composition root
-wires the layers together. `npm run lint` enforces and tests these boundaries.
-
-Frontend checks, from `frontend/`: `npm run lint`, `npm test`, `npm run build`,
-`npm run test:e2e`. Playwright covers responsive layouts, both themes, loading, streaming,
-error recovery and safe text rendering. See [validation notes](validation/README.md)
-for package-date evidence and the separate optional live OpenAI check.
-
-The streaming endpoint accepts the existing ask request and emits `delta` events with
-`{ "text": "..." }`, followed by one terminal `result` containing the existing full
-answer response, or a terminal `error` with `{ "message": "..." }`. Clients must treat
-EOF without a result as interruption. The JSON ask endpoint remains compatible.
-
-### Manage policies
-
-Open **Manage policies** in the header or visit `/policies`. The page uses the same
-responsive layout and light/dark preference as the question page. Navigation keeps
-your question draft and previous answer intact.
-
-Upload a PDF, HTML or UTF-8 text file (one at a time, at most 20 MiB). PDFs must have
-readable text and be unencrypted; OCR and Word files are not supported. Extraction
-is limited to 1,000 PDF pages / 2 million characters and 10,000 chunks per revision.
-The original is stored privately under a generated filename and downloaded as an
-attachment. Uploaded HTML is extracted to text, never executed or embedded.
-
-Select a policy to read its content, download the original, rename its display
-title, inspect chunks or delete it. Deletion removes it from future answers;
-previous answers remain historical snapshots. Sample questions requiring deleted
-policies disappear. Duplicate original filenames are rejected.
-
-Chunking supports character length, sentence/punctuation boundaries, paragraphs,
-and HTML headings/sections (HTML files only). Size and overlap are measured in
-characters. Default settings remain 900 / 150. HTML heading context counts towards
-the size limit. Overlap must leave room for that heading context. Preview changes first, then apply them to update search. Failed or
-interrupted processing retains the previous searchable revision. Failed uploads
-can be retried or deleted. Processing status is persisted and can be refreshed.
-
-The catalogue, originals, revisions and managed Chroma index live in
-`data/policies/` (relative to `VECTOR_STORE_DIR`'s parent), excluded from Git.
-The existing three PDFs are imported once, preserving their identities and titles.
-Back up this whole directory together. Run one application process: management
-writes are serialized and retrieval snapshots use a short publication lock. There is no authentication
-layer; retain the app's local/internal deployment boundary.
-
-`policy-rag-index` also updates the managed catalogue through the shared extraction
-and revision pipeline. Its `--reset` option resets the legacy CLI collection; it
-does not delete policies uploaded through the UI.
-
-Management APIs are under `/api/policies`, with operation status at
-`/api/operations/{id}`. Uploads use a raw body and URL-encoded `X-Filename` header.
-Mutations reject cross-origin browser requests; rename/delete/apply check policy
-versions. The existing JSON and streamed question endpoints remain compatible,
-with an additional optional source-location label for HTML/text policies.
-
-OpenAI embeddings use bounded input pieces and requests. Long-chunk vectors are
-combined using length-weighted pooling and normalization; stored chunks and their
-previewed text remain exact. No tokenizer downloads are required.
+- No authentication or multi-user permissions; run one local app process.
+- No conversation history, OCR or Word-document support.
+- Generated guidance can be wrong; the source passages are available for checking.
