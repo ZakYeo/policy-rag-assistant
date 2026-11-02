@@ -1,12 +1,15 @@
 import os
 import unittest
+from pathlib import Path
+from tempfile import TemporaryDirectory
+from unittest.mock import patch
 
 from fastapi import HTTPException
 from app.assistant import AssistantService
 from app.config import get_settings
 from app.main import create_app
 from app.retrieval.answerer import AnswerProviderError
-from fastapi.responses import HTMLResponse
+from fastapi.responses import FileResponse
 
 from app.web.routes import ask_question, root, status
 from app.web.schemas import AskRequest
@@ -92,15 +95,21 @@ class AppSmokeTests(unittest.TestCase):
 
         self.assertEqual(payload, {"status": "ok", "environment": "test"})
 
-    def test_root_returns_setup_status(self) -> None:
-        response = root()
+    def test_root_serves_the_built_frontend(self) -> None:
+        with TemporaryDirectory() as directory:
+            folder = Path(directory)
+            (folder / "index.html").write_text("<title>NorthStar Policy Desk</title>")
+            with patch("app.web.routes.STATIC_DIR", folder, create=True):
+                response = root()
+            self.assertIsInstance(response, FileResponse)
+            self.assertEqual(Path(response.path), folder / "index.html")
 
-        self.assertIsInstance(response, HTMLResponse)
-        body = response.body.decode("utf-8")
-        self.assertIn("Policy RAG Assistant", body)
-        self.assertIn("Ask Policy Assistant", body)
-        self.assertIn("Answer mode", body)
-        self.assertIn('option value="openai" selected', body)
+    def test_missing_frontend_is_an_explicit_service_error(self) -> None:
+        with TemporaryDirectory() as directory:
+            with patch("app.web.routes.STATIC_DIR", Path(directory), create=True):
+                with self.assertRaises(HTTPException) as error:
+                    root()
+                self.assertEqual(error.exception.status_code, 503)
 
     def test_status_returns_setup_paths(self) -> None:
         payload = status()
@@ -119,7 +128,9 @@ class AppSmokeTests(unittest.TestCase):
         self.assertEqual(response.answer, "Mock answer")
         self.assertEqual(response.answer_provider, "openai")
         self.assertEqual(response.routing_provider, "heuristic")
-        self.assertEqual(response.routed_documents[0].document_id, "northstar-ai-acceptable-use-policy")
+        self.assertEqual(
+            response.routed_documents[0].document_id, "northstar-ai-acceptable-use-policy"
+        )
         self.assertEqual(response.sources[0].document_name, "policy.pdf")
         self.assertEqual(response.retrieved_chunks[0].chunk_id, "chunk-1")
 

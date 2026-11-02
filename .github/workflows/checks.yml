@@ -1,0 +1,62 @@
+name: Policy Desk checks
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    env:
+      ROUTER_PROVIDER: heuristic
+      EMBEDDING_PROVIDER: local
+      ANSWER_PROVIDER: extractive
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.19.0'
+      - name: Check package publication dates before installation
+        run: |
+          python scripts/check_python_release_dates.py
+          node frontend/tooling/check-release-dates.mjs
+      - name: Install the pinned Python environment
+        run: |
+          python -m venv .venv
+          .venv/bin/python -m pip install --no-deps -r requirements-ci.txt
+          .venv/bin/python -m pip install --no-deps --no-build-isolation -e .
+      - name: Install the pinned frontend environment
+        working-directory: frontend
+        run: npm ci
+      - name: Validate Python and RAG behavior
+        run: |
+          .venv/bin/ruff check app tests integration_tests scripts/check_python_release_dates.py
+          .venv/bin/python -m unittest discover -s tests -v
+          ./scripts/run_rag_integration_tests.sh
+      - name: Validate MVVM and build the frontend
+        working-directory: frontend
+        run: |
+          npm run lint
+          npm test
+          npm run build
+      - name: Prepare local policy retrieval and the pinned browser
+        run: |
+          .venv/bin/policy-rag-index
+          cd frontend
+          npm exec -- playwright install chromium
+      - name: Validate responsive UI and streaming without paid providers
+        working-directory: frontend
+        run: npm run test:e2e
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-results
+          path: |
+            frontend/playwright-report/
+            frontend/test-results/

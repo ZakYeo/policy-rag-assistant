@@ -1,0 +1,695 @@
+{
+  "cutoff": "2026-10-29T20:06:01+00:00",
+  "packages": [
+    {
+      "name": "Jinja2",
+      "version": "3.1.6",
+      "latestArtifactPublishedAt": "2025-03-05T20:05:02.478302+00:00"
+    },
+    {
+      "name": "MarkupSafe",
+      "version": "3.0.3",
+      "latestArtifactPublishedAt": "2025-09-27T18:37:40.426446+00:00"
+    },
+    {
+      "name": "PyMuPDF",
+      "version": "1.27.2.2",
+      "latestArtifactPublishedAt": "2026-03-20T09:47:58.386121+00:00"
+    },
+    {
+      "name": "PyPika",
+      "version": "0.51.1",
+      "latestArtifactPublishedAt": "2026-02-04T11:27:48.304304+00:00"
+    },
+    {
+      "name": "PyYAML",
+      "version": "6.0.3",
+      "latestArtifactPublishedAt": "2025-09-29T20:27:46.049234+00:00"
+    },
+    {
+      "name": "Pygments",
+      "version": "2.20.0",
+      "latestArtifactPublishedAt": "2026-03-29T13:29:33.898791+00:00"
+    },
+    {
+      "name": "RapidFuzz",
+      "version": "3.14.3",
+      "latestArtifactPublishedAt": "2025-11-01T11:54:52.321157+00:00"
+    },
+    {
+      "name": "SQLAlchemy",
+      "version": "2.0.48",
+      "latestArtifactPublishedAt": "2026-03-02T16:07:59.763453+00:00"
+    },
+    {
+      "name": "aiohappyeyeballs",
+      "version": "2.6.1",
+      "latestArtifactPublishedAt": "2025-03-12T01:42:48.764560+00:00"
+    },
+    {
+      "name": "aiohttp",
+      "version": "3.13.5",
+      "latestArtifactPublishedAt": "2026-03-31T22:01:03.343982+00:00"
+    },
+    {
+      "name": "aiosignal",
+      "version": "1.4.0",
+      "latestArtifactPublishedAt": "2025-07-03T22:54:43.528302+00:00"
+    },
+    {
+      "name": "annotated-doc",
+      "version": "0.0.4",
+      "latestArtifactPublishedAt": "2025-11-10T22:07:42.062214+00:00"
+    },
+    {
+      "name": "annotated-types",
+      "version": "0.7.0",
+      "latestArtifactPublishedAt": "2024-05-20T21:33:25.928805+00:00"
+    },
+    {
+      "name": "anyio",
+      "version": "4.13.0",
+      "latestArtifactPublishedAt": "2026-03-24T12:59:09.671977+00:00"
+    },
+    {
+      "name": "appdirs",
+      "version": "1.4.4",
+      "latestArtifactPublishedAt": "2020-05-11T07:59:51.037820+00:00"
+    },
+    {
+      "name": "attrs",
+      "version": "26.1.0",
+      "latestArtifactPublishedAt": "2026-03-19T14:22:25.026315+00:00"
+    },
+    {
+      "name": "bcrypt",
+      "version": "5.0.0",
+      "latestArtifactPublishedAt": "2025-09-25T19:50:47.829243+00:00"
+    },
+    {
+      "name": "build",
+      "version": "1.4.2",
+      "latestArtifactPublishedAt": "2026-03-25T14:20:27.659316+00:00"
+    },
+    {
+      "name": "certifi",
+      "version": "2026.2.25",
+      "latestArtifactPublishedAt": "2026-02-25T02:54:17.342729+00:00"
+    },
+    {
+      "name": "charset-normalizer",
+      "version": "3.4.7",
+      "latestArtifactPublishedAt": "2026-04-02T09:28:39.342869+00:00"
+    },
+    {
+      "name": "chromadb",
+      "version": "1.5.5",
+      "latestArtifactPublishedAt": "2026-03-10T09:30:21.349999+00:00"
+    },
+    {
+      "name": "click",
+      "version": "8.3.1",
+      "latestArtifactPublishedAt": "2025-11-15T20:45:42.706404+00:00"
+    },
+    {
+      "name": "dataclasses-json",
+      "version": "0.6.7",
+      "latestArtifactPublishedAt": "2024-06-09T16:20:19.103848+00:00"
+    },
+    {
+      "name": "datasets",
+      "version": "4.8.4",
+      "latestArtifactPublishedAt": "2026-03-23T14:21:17.987900+00:00"
+    },
+    {
+      "name": "dill",
+      "version": "0.4.1",
+      "latestArtifactPublishedAt": "2026-01-19T02:36:56.850743+00:00"
+    },
+    {
+      "name": "diskcache",
+      "version": "5.6.3",
+      "latestArtifactPublishedAt": "2023-08-31T06:12:00.316130+00:00"
+    },
+    {
+      "name": "distro",
+      "version": "1.9.0",
+      "latestArtifactPublishedAt": "2023-12-24T09:54:32.310732+00:00"
+    },
+    {
+      "name": "docstring_parser",
+      "version": "0.17.0",
+      "latestArtifactPublishedAt": "2025-07-21T07:35:01.868877+00:00"
+    },
+    {
+      "name": "durationpy",
+      "version": "0.10",
+      "latestArtifactPublishedAt": "2025-05-17T13:52:37.260610+00:00"
+    },
+    {
+      "name": "fastapi",
+      "version": "0.135.3",
+      "latestArtifactPublishedAt": "2026-04-01T16:23:59.328683+00:00"
+    },
+    {
+      "name": "filelock",
+      "version": "3.25.2",
+      "latestArtifactPublishedAt": "2026-03-11T20:45:38.487847+00:00"
+    },
+    {
+      "name": "flatbuffers",
+      "version": "25.12.19",
+      "latestArtifactPublishedAt": "2025-12-19T23:16:13.622515+00:00"
+    },
+    {
+      "name": "frozenlist",
+      "version": "1.8.0",
+      "latestArtifactPublishedAt": "2025-10-06T05:38:17.865026+00:00"
+    },
+    {
+      "name": "fsspec",
+      "version": "2026.2.0",
+      "latestArtifactPublishedAt": "2026-02-05T21:50:53.743576+00:00"
+    },
+    {
+      "name": "googleapis-common-protos",
+      "version": "1.74.0",
+      "latestArtifactPublishedAt": "2026-04-02T21:23:26.679917+00:00"
+    },
+    {
+      "name": "greenlet",
+      "version": "3.3.2",
+      "latestArtifactPublishedAt": "2026-02-20T21:02:51.526204+00:00"
+    },
+    {
+      "name": "grpcio",
+      "version": "1.80.0",
+      "latestArtifactPublishedAt": "2026-03-30T08:49:10.502582+00:00"
+    },
+    {
+      "name": "h11",
+      "version": "0.16.0",
+      "latestArtifactPublishedAt": "2025-04-24T03:35:25.427659+00:00"
+    },
+    {
+      "name": "hf-xet",
+      "version": "1.4.3",
+      "latestArtifactPublishedAt": "2026-03-31T22:40:16.401771+00:00"
+    },
+    {
+      "name": "httpcore",
+      "version": "1.0.9",
+      "latestArtifactPublishedAt": "2025-04-24T22:06:22.219726+00:00"
+    },
+    {
+      "name": "httptools",
+      "version": "0.7.1",
+      "latestArtifactPublishedAt": "2025-10-10T03:55:08.559207+00:00"
+    },
+    {
+      "name": "httpx",
+      "version": "0.28.1",
+      "latestArtifactPublishedAt": "2024-12-06T15:37:23.222462+00:00"
+    },
+    {
+      "name": "httpx-sse",
+      "version": "0.4.3",
+      "latestArtifactPublishedAt": "2025-10-10T21:48:22.271822+00:00"
+    },
+    {
+      "name": "huggingface_hub",
+      "version": "1.9.0",
+      "latestArtifactPublishedAt": "2026-04-03T08:35:55.888376+00:00"
+    },
+    {
+      "name": "idna",
+      "version": "3.11",
+      "latestArtifactPublishedAt": "2025-10-12T14:55:20.501377+00:00"
+    },
+    {
+      "name": "importlib_metadata",
+      "version": "8.7.1",
+      "latestArtifactPublishedAt": "2025-12-21T10:00:19.278538+00:00"
+    },
+    {
+      "name": "importlib_resources",
+      "version": "6.5.2",
+      "latestArtifactPublishedAt": "2025-01-03T18:51:56.698254+00:00"
+    },
+    {
+      "name": "instructor",
+      "version": "1.15.1",
+      "latestArtifactPublishedAt": "2026-04-03T01:51:30.107614+00:00"
+    },
+    {
+      "name": "jiter",
+      "version": "0.13.0",
+      "latestArtifactPublishedAt": "2026-02-02T12:37:56.441444+00:00"
+    },
+    {
+      "name": "jsonpatch",
+      "version": "1.33",
+      "latestArtifactPublishedAt": "2023-06-26T12:07:29.144103+00:00"
+    },
+    {
+      "name": "jsonpointer",
+      "version": "3.1.1",
+      "latestArtifactPublishedAt": "2026-03-23T22:32:32.458731+00:00"
+    },
+    {
+      "name": "jsonschema",
+      "version": "4.26.0",
+      "latestArtifactPublishedAt": "2026-01-07T13:41:07.246891+00:00"
+    },
+    {
+      "name": "jsonschema-specifications",
+      "version": "2025.9.1",
+      "latestArtifactPublishedAt": "2025-09-08T01:34:59.186960+00:00"
+    },
+    {
+      "name": "kubernetes",
+      "version": "35.0.0",
+      "latestArtifactPublishedAt": "2026-01-16T01:05:27.760154+00:00"
+    },
+    {
+      "name": "langchain",
+      "version": "1.2.14",
+      "latestArtifactPublishedAt": "2026-03-31T13:50:37.398337+00:00"
+    },
+    {
+      "name": "langchain-classic",
+      "version": "1.0.3",
+      "latestArtifactPublishedAt": "2026-03-13T13:56:11.960223+00:00"
+    },
+    {
+      "name": "langchain-community",
+      "version": "0.4.1",
+      "latestArtifactPublishedAt": "2025-10-27T15:20:32.504885+00:00"
+    },
+    {
+      "name": "langchain-core",
+      "version": "1.2.25",
+      "latestArtifactPublishedAt": "2026-04-02T22:39:11.528679+00:00"
+    },
+    {
+      "name": "langchain-openai",
+      "version": "1.1.12",
+      "latestArtifactPublishedAt": "2026-03-23T18:59:19.211911+00:00"
+    },
+    {
+      "name": "langchain-text-splitters",
+      "version": "1.1.1",
+      "latestArtifactPublishedAt": "2026-02-18T23:02:42.798746+00:00"
+    },
+    {
+      "name": "langgraph",
+      "version": "1.1.4",
+      "latestArtifactPublishedAt": "2026-03-31T12:56:45.344619+00:00"
+    },
+    {
+      "name": "langgraph-checkpoint",
+      "version": "4.0.1",
+      "latestArtifactPublishedAt": "2026-02-27T21:06:16.092786+00:00"
+    },
+    {
+      "name": "langgraph-prebuilt",
+      "version": "1.0.8",
+      "latestArtifactPublishedAt": "2026-02-19T18:14:39.083988+00:00"
+    },
+    {
+      "name": "langgraph-sdk",
+      "version": "0.3.12",
+      "latestArtifactPublishedAt": "2026-03-18T22:15:54.592955+00:00"
+    },
+    {
+      "name": "langsmith",
+      "version": "0.7.24",
+      "latestArtifactPublishedAt": "2026-04-01T20:23:30.630542+00:00"
+    },
+    {
+      "name": "markdown-it-py",
+      "version": "4.0.0",
+      "latestArtifactPublishedAt": "2025-08-11T12:57:52.854757+00:00"
+    },
+    {
+      "name": "marshmallow",
+      "version": "3.26.2",
+      "latestArtifactPublishedAt": "2025-12-22T06:53:53.309306+00:00"
+    },
+    {
+      "name": "mdurl",
+      "version": "0.1.2",
+      "latestArtifactPublishedAt": "2022-08-14T12:40:10.846281+00:00"
+    },
+    {
+      "name": "mmh3",
+      "version": "5.2.1",
+      "latestArtifactPublishedAt": "2026-03-05T15:55:57.716449+00:00"
+    },
+    {
+      "name": "mpmath",
+      "version": "1.3.0",
+      "latestArtifactPublishedAt": "2023-03-07T16:47:11.061515+00:00"
+    },
+    {
+      "name": "multidict",
+      "version": "6.7.1",
+      "latestArtifactPublishedAt": "2026-01-26T02:46:45.979236+00:00"
+    },
+    {
+      "name": "multiprocess",
+      "version": "0.70.19",
+      "latestArtifactPublishedAt": "2026-01-19T06:47:39.744478+00:00"
+    },
+    {
+      "name": "mypy_extensions",
+      "version": "1.1.0",
+      "latestArtifactPublishedAt": "2025-04-22T14:54:24.164338+00:00"
+    },
+    {
+      "name": "nest-asyncio",
+      "version": "1.6.0",
+      "latestArtifactPublishedAt": "2024-01-21T14:25:19.227547+00:00"
+    },
+    {
+      "name": "networkx",
+      "version": "3.6.1",
+      "latestArtifactPublishedAt": "2025-12-08T17:02:39.908840+00:00"
+    },
+    {
+      "name": "numpy",
+      "version": "2.4.4",
+      "latestArtifactPublishedAt": "2026-03-29T13:22:01.298989+00:00"
+    },
+    {
+      "name": "oauthlib",
+      "version": "3.3.1",
+      "latestArtifactPublishedAt": "2025-06-19T22:48:08.269738+00:00"
+    },
+    {
+      "name": "onnxruntime",
+      "version": "1.24.4",
+      "latestArtifactPublishedAt": "2026-03-17T22:05:51.669401+00:00"
+    },
+    {
+      "name": "openai",
+      "version": "2.30.0",
+      "latestArtifactPublishedAt": "2026-03-25T22:08:59.960102+00:00"
+    },
+    {
+      "name": "opentelemetry-api",
+      "version": "1.40.0",
+      "latestArtifactPublishedAt": "2026-03-04T14:17:21.555701+00:00"
+    },
+    {
+      "name": "opentelemetry-exporter-otlp-proto-common",
+      "version": "1.40.0",
+      "latestArtifactPublishedAt": "2026-03-04T14:17:23.801330+00:00"
+    },
+    {
+      "name": "opentelemetry-exporter-otlp-proto-grpc",
+      "version": "1.40.0",
+      "latestArtifactPublishedAt": "2026-03-04T14:17:24.400778+00:00"
+    },
+    {
+      "name": "opentelemetry-proto",
+      "version": "1.40.0",
+      "latestArtifactPublishedAt": "2026-03-04T14:17:31.194837+00:00"
+    },
+    {
+      "name": "opentelemetry-sdk",
+      "version": "1.40.0",
+      "latestArtifactPublishedAt": "2026-03-04T14:17:31.870896+00:00"
+    },
+    {
+      "name": "opentelemetry-semantic-conventions",
+      "version": "0.61b0",
+      "latestArtifactPublishedAt": "2026-03-04T14:17:32.664465+00:00"
+    },
+    {
+      "name": "orjson",
+      "version": "3.11.8",
+      "latestArtifactPublishedAt": "2026-03-31T16:16:27.878052+00:00"
+    },
+    {
+      "name": "ormsgpack",
+      "version": "1.12.2",
+      "latestArtifactPublishedAt": "2026-01-18T20:56:12.047184+00:00"
+    },
+    {
+      "name": "overrides",
+      "version": "7.7.0",
+      "latestArtifactPublishedAt": "2024-01-27T21:01:33.423462+00:00"
+    },
+    {
+      "name": "packaging",
+      "version": "26.0",
+      "latestArtifactPublishedAt": "2026-01-21T20:50:39.064191+00:00"
+    },
+    {
+      "name": "pandas",
+      "version": "3.0.2",
+      "latestArtifactPublishedAt": "2026-03-31T06:48:30.816546+00:00"
+    },
+    {
+      "name": "pillow",
+      "version": "12.2.0",
+      "latestArtifactPublishedAt": "2026-04-01T14:46:17.687714+00:00"
+    },
+    {
+      "name": "propcache",
+      "version": "0.4.1",
+      "latestArtifactPublishedAt": "2025-10-08T19:49:02.291919+00:00"
+    },
+    {
+      "name": "protobuf",
+      "version": "6.33.6",
+      "latestArtifactPublishedAt": "2026-03-18T19:05:00.988693+00:00"
+    },
+    {
+      "name": "pyarrow",
+      "version": "23.0.1",
+      "latestArtifactPublishedAt": "2026-02-16T10:14:12.390820+00:00"
+    },
+    {
+      "name": "pybase64",
+      "version": "1.4.3",
+      "latestArtifactPublishedAt": "2025-12-06T13:27:04.013728+00:00"
+    },
+    {
+      "name": "pydantic",
+      "version": "2.12.5",
+      "latestArtifactPublishedAt": "2025-11-26T15:11:46.471492+00:00"
+    },
+    {
+      "name": "pydantic-settings",
+      "version": "2.13.1",
+      "latestArtifactPublishedAt": "2026-02-19T13:45:08.055663+00:00"
+    },
+    {
+      "name": "pydantic_core",
+      "version": "2.41.5",
+      "latestArtifactPublishedAt": "2025-11-04T13:43:49.098415+00:00"
+    },
+    {
+      "name": "pyproject_hooks",
+      "version": "1.2.0",
+      "latestArtifactPublishedAt": "2024-09-29T09:24:13.293934+00:00"
+    },
+    {
+      "name": "python-dateutil",
+      "version": "2.9.0.post0",
+      "latestArtifactPublishedAt": "2024-03-01T18:36:20.211056+00:00"
+    },
+    {
+      "name": "python-dotenv",
+      "version": "1.2.2",
+      "latestArtifactPublishedAt": "2026-03-01T16:00:26.196056+00:00"
+    },
+    {
+      "name": "ragas",
+      "version": "0.4.3",
+      "latestArtifactPublishedAt": "2026-01-13T17:48:01.043274+00:00"
+    },
+    {
+      "name": "referencing",
+      "version": "0.37.0",
+      "latestArtifactPublishedAt": "2025-10-13T15:30:48.871335+00:00"
+    },
+    {
+      "name": "regex",
+      "version": "2026.3.32",
+      "latestArtifactPublishedAt": "2026-03-28T21:49:22.012434+00:00"
+    },
+    {
+      "name": "requests",
+      "version": "2.33.1",
+      "latestArtifactPublishedAt": "2026-03-30T16:09:15.531306+00:00"
+    },
+    {
+      "name": "requests-oauthlib",
+      "version": "2.0.0",
+      "latestArtifactPublishedAt": "2024-03-22T20:32:29.939715+00:00"
+    },
+    {
+      "name": "requests-toolbelt",
+      "version": "1.0.0",
+      "latestArtifactPublishedAt": "2023-05-01T04:11:33.229998+00:00"
+    },
+    {
+      "name": "rich",
+      "version": "14.3.3",
+      "latestArtifactPublishedAt": "2026-02-19T17:23:13.732467+00:00"
+    },
+    {
+      "name": "rpds-py",
+      "version": "0.30.0",
+      "latestArtifactPublishedAt": "2025-11-30T20:24:38.837614+00:00"
+    },
+    {
+      "name": "ruff",
+      "version": "0.17.3",
+      "latestArtifactPublishedAt": "2026-10-27T00:34:05.914554+00:00"
+    },
+    {
+      "name": "scikit-network",
+      "version": "0.33.5",
+      "latestArtifactPublishedAt": "2025-11-19T09:45:14.402710+00:00"
+    },
+    {
+      "name": "scipy",
+      "version": "1.17.1",
+      "latestArtifactPublishedAt": "2026-02-23T00:26:24.851890+00:00"
+    },
+    {
+      "name": "setuptools",
+      "version": "82.0.1",
+      "latestArtifactPublishedAt": "2026-03-09T12:47:17.221981+00:00"
+    },
+    {
+      "name": "shellingham",
+      "version": "1.5.4",
+      "latestArtifactPublishedAt": "2023-10-24T04:13:40.426335+00:00"
+    },
+    {
+      "name": "six",
+      "version": "1.17.0",
+      "latestArtifactPublishedAt": "2024-12-04T17:35:28.174320+00:00"
+    },
+    {
+      "name": "sniffio",
+      "version": "1.3.1",
+      "latestArtifactPublishedAt": "2024-02-25T23:20:04.057878+00:00"
+    },
+    {
+      "name": "starlette",
+      "version": "1.0.0",
+      "latestArtifactPublishedAt": "2026-03-22T18:29:46.779636+00:00"
+    },
+    {
+      "name": "sympy",
+      "version": "1.14.0",
+      "latestArtifactPublishedAt": "2025-04-27T18:05:01.611132+00:00"
+    },
+    {
+      "name": "tenacity",
+      "version": "9.1.4",
+      "latestArtifactPublishedAt": "2026-02-07T10:45:33.841653+00:00"
+    },
+    {
+      "name": "tiktoken",
+      "version": "0.12.0",
+      "latestArtifactPublishedAt": "2025-10-06T20:22:45.419687+00:00"
+    },
+    {
+      "name": "tokenizers",
+      "version": "0.22.2",
+      "latestArtifactPublishedAt": "2026-01-05T10:45:20.593205+00:00"
+    },
+    {
+      "name": "tqdm",
+      "version": "4.67.3",
+      "latestArtifactPublishedAt": "2026-02-03T17:35:53.048329+00:00"
+    },
+    {
+      "name": "typer",
+      "version": "0.24.1",
+      "latestArtifactPublishedAt": "2026-02-21T16:54:41.616711+00:00"
+    },
+    {
+      "name": "typing-inspect",
+      "version": "0.9.0",
+      "latestArtifactPublishedAt": "2023-05-24T20:25:47.612134+00:00"
+    },
+    {
+      "name": "typing-inspection",
+      "version": "0.4.2",
+      "latestArtifactPublishedAt": "2025-10-01T02:14:41.687923+00:00"
+    },
+    {
+      "name": "typing_extensions",
+      "version": "4.15.0",
+      "latestArtifactPublishedAt": "2025-08-25T13:49:26.313895+00:00"
+    },
+    {
+      "name": "urllib3",
+      "version": "2.6.3",
+      "latestArtifactPublishedAt": "2026-01-07T16:24:43.925891+00:00"
+    },
+    {
+      "name": "uuid_utils",
+      "version": "0.14.1",
+      "latestArtifactPublishedAt": "2026-02-20T22:50:46.870998+00:00"
+    },
+    {
+      "name": "uvicorn",
+      "version": "0.42.0",
+      "latestArtifactPublishedAt": "2026-03-16T06:19:50.077618+00:00"
+    },
+    {
+      "name": "uvloop",
+      "version": "0.22.1",
+      "latestArtifactPublishedAt": "2025-10-16T22:17:19.342505+00:00"
+    },
+    {
+      "name": "watchfiles",
+      "version": "1.1.1",
+      "latestArtifactPublishedAt": "2025-10-14T15:06:21.080134+00:00"
+    },
+    {
+      "name": "websocket-client",
+      "version": "1.9.0",
+      "latestArtifactPublishedAt": "2025-10-07T21:16:36.495475+00:00"
+    },
+    {
+      "name": "websockets",
+      "version": "16.0",
+      "latestArtifactPublishedAt": "2026-01-10T09:23:47.181167+00:00"
+    },
+    {
+      "name": "wheel",
+      "version": "0.46.3",
+      "latestArtifactPublishedAt": "2026-01-22T12:39:49.136819+00:00"
+    },
+    {
+      "name": "xxhash",
+      "version": "3.6.0",
+      "latestArtifactPublishedAt": "2025-10-02T14:37:08.097073+00:00"
+    },
+    {
+      "name": "yarl",
+      "version": "1.23.0",
+      "latestArtifactPublishedAt": "2026-03-01T22:07:53.373691+00:00"
+    },
+    {
+      "name": "zipp",
+      "version": "3.23.0",
+      "latestArtifactPublishedAt": "2025-06-08T17:06:39.400622+00:00"
+    },
+    {
+      "name": "zstandard",
+      "version": "0.25.0",
+      "latestArtifactPublishedAt": "2025-09-14T22:18:49.077254+00:00"
+    }
+  ]
+}

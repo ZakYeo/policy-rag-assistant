@@ -33,12 +33,18 @@ class ChunkIndexer:
         )
 
     def upsert_chunks(self, chunks: list[Chunk]) -> int:
-        if not chunks:
-            return 0
+        for offset in range(0, len(chunks), 256):
+            self._upsert_batch(chunks[offset:offset + 256])
+        return len(chunks)
 
+    def _upsert_batch(self, chunks: list[Chunk]) -> None:
         embeddings = self._embedder.embed_texts([chunk.text for chunk in chunks])
         metadatas = [
             {
+                "revision": chunk.revision,
+                "location": chunk.location,
+                "section_id": chunk.section_id,
+                "heading_context": chunk.heading_context,
                 "document_id": chunk.document_id,
                 "document_name": chunk.document_name,
                 "source_path": chunk.source_path,
@@ -56,7 +62,16 @@ class ChunkIndexer:
             metadatas=metadatas,
             embeddings=embeddings,
         )
-        return len(chunks)
+
+    def prune_revisions(self, active_revisions: set[str]) -> None:
+        records = self._collection.get(include=['metadatas'])
+        obsolete = [chunk_id for chunk_id, metadata in zip(records['ids'], records['metadatas'])
+                    if metadata.get('revision') not in active_revisions]
+        for offset in range(0, len(obsolete), 1000):
+            self._collection.delete(ids=obsolete[offset:offset + 1000])
+
+    def delete_document(self, document_id: str) -> None:
+        self._collection.delete(where={"document_id": document_id})
 
     def count(self) -> int:
         return self._collection.count()

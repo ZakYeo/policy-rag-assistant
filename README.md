@@ -7,6 +7,12 @@ It mimics a realistic workplace tool: a user asks natural-language questions abo
 ## Capabilities And Features
 
 - browser-based UI for asking policy questions
+- responsive NorthStar Policy Desk with system-aware light/dark themes and skeleton loading
+- React/TypeScript MVVM frontend with build-time Tailwind and enforced architecture boundaries
+- incremental OpenAI answer streaming with explicit interruption handling
+- sample questions for everyday lookups and guidance spanning multiple policies; selection fills the editor without submitting
+- policy management for PDF, HTML and text uploads, display titles, deletion and original-file downloads
+- configurable chunking with source inspection, preview/apply and revision-safe indexing
 - `POST /api/ask` JSON API for grounded answers
 - local PDF ingestion from the `documents/` directory
 - page-level extraction and chunk-level metadata capture
@@ -18,13 +24,45 @@ It mimics a realistic workplace tool: a user asks natural-language questions abo
 - isolated RAG integration tests against the current fake PDF corpus
 - unit test coverage across ingestion, routing, retrieval, answering, and API behavior
 
-<img width="2559" height="1282" alt="image" src="https://github.com/user-attachments/assets/58c308ba-42a2-4bbb-a65f-69b92963fb0b" />
-<img width="1240" height="1148" alt="image" src="https://github.com/user-attachments/assets/3f95d0a2-0fa6-4d95-8f40-545f7a7110de" />
 
+
+## Screenshots and live demo
+
+Captured with Playwright against the running app and its synthetic NorthStar policies.
+
+### Live question demonstration
+
+[![Watch a real question receive streamed OpenAI guidance and policy references](docs/media/live-question-preview.gif)](docs/media/live-question-demo.webm)
+
+[Open the full-resolution video](docs/media/live-question-demo.webm) · [Download WebM](https://raw.githubusercontent.com/ZakYeo/policy-rag-assistant/refs/heads/main/docs/media/live-question-demo.webm)
+
+This silent, 15-second recording submits a real question, receives an OpenAI answer
+as it streams, and shows the supporting policy references. It also visits dark mode,
+the mobile layout and policy management. The answer is live, with no mocked responses.
+The animated preview plays directly in this README; the full-resolution WebM is available for playback or download.
+
+### Policy Desk
+
+![NorthStar Policy Desk with a completed live answer and supporting policy evidence](docs/media/policy-desk-light.png)
+
+### Policy management
+
+![NorthStar policy library with document details and configurable chunking settings](docs/media/manage-policies-light.png)
+
+<details>
+<summary>Dark theme and mobile layout</summary>
+
+![Policy Desk in dark mode with the same live answer](docs/media/policy-desk-dark.png)
+
+<img src="docs/media/policy-desk-mobile-dark.png" width="390" alt="Responsive Policy Desk on a narrow mobile screen in dark mode" />
+
+</details>
+
+Capture and playback-validation commands are documented in [the media notes](docs/media/README.md).
 
 ## Current Document Set
 
-Policy source documents currently live in [`documents/`](/home/zakye/policy-rag-assistant/documents):
+Policy source documents currently live in [`documents/`](documents/):
 
 - `northstar-ai-acceptable-use-policy.pdf`
 - `northstar-employee-handbook.pdf`
@@ -54,7 +92,7 @@ To keep the demo focused, the initial version should avoid production concerns s
 
 ## Repository Status
 
-This repository now has the initial project scaffold in place.
+This repository contains a working policy assistant and policy-management interface.
 
 Current setup includes:
 
@@ -66,7 +104,9 @@ Current setup includes:
 - local Chroma indexing with configurable embedding providers
 - document routing that can choose relevant PDFs before chunk retrieval
 - retrieval and grounded answer generation services
-- a small unit test suite in `tests/`
+- a React/TypeScript MVVM interface in `frontend/`
+- persistent policy management and revision publication in `app/policies/`
+- backend unit and API regression coverage in `tests/`
 - a separate RAG integration test suite in `integration_tests/`
 
 The app is now a working MVP prototype. It can ingest the local policy PDFs, build a local vector index, route each question to the most relevant documents, retrieve matching chunks, and return grounded answers through both a JSON API and a simple browser UI.
@@ -99,23 +139,30 @@ If you are already using the environment and want to leave it later:
 deactivate
 ```
 
-### 2. Install the project
+### 2. Install the pinned project environment
 
-With the virtual environment activated:
+Verify that every pinned Python package meets the release-age policy, then install the
+validated backend, build and test environment without resolving newer dependencies:
 
 ```bash
-python3 -m pip install -e .
+python3 scripts/check_python_release_dates.py
+python3 -m pip install --no-deps -r requirements-ci.txt
+python3 -m pip install --no-deps --no-build-isolation -e .
 ```
 
-If you want to run the full test toolchain, including the RAGAS-based integration evaluation:
+Build the frontend with Node.js 22.19 or newer (within the supported Node 22 line):
 
 ```bash
-python3 -m pip install -e ".[dev]"
+cd frontend
+node tooling/check-release-dates.mjs
+npm ci
+npm run build
+cd ..
 ```
 
 ### 3. Configure environment variables
 
-Copy [`.env.example`](/home/zakye/policy-rag-assistant/.env.example) to `.env` and set your real `OPENAI_API_KEY`.
+Copy [`.env.example`](.env.example) to `.env` and set your real `OPENAI_API_KEY`.
 
 Example:
 
@@ -129,12 +176,16 @@ The default MVP answer mode is now `openai`, while embeddings still default to t
 
 The current FastAPI app exposes:
 
-- `GET /` for the browser demo UI
+- `GET /` for the policy question page
+- `GET /policies` for policy management
+- `/api/policies` for policy content, uploads, metadata, deletion, chunks and preview/apply
+- `GET /api/operations/{id}` for persisted processing status
 - `GET /api/status` for basic app status and paths
 - `POST /api/ask` for the grounded question-answer API
+- `POST /api/ask/stream` for incremental OpenAI answers over server-sent events
 - `GET /health` for a simple health check
 
-Run the app locally with:
+After building the frontend, run the app locally with:
 
 ```bash
 uvicorn app.main:app --reload
@@ -149,7 +200,10 @@ Then test it manually:
 Expected behavior:
 
 - `/` shows a browser-based policy assistant UI
-- the UI includes an `Answer mode` toggle with `OpenAI` selected by default
+- the UI includes an `Answer style` choice with `AI-assisted (OpenAI)` selected by default
+- no answer or evidence is fabricated on first load; submit a question to populate the panels
+- the header theme button follows your system theme initially and remembers your override
+- Sample Questions floats in the left margin when the window is at least 1840px wide; on smaller screens it sits below the question form. Selecting a question fills and focuses the editor without sending a request.
 - `/api/status` returns JSON describing the app status and configured paths
 - `/health` returns a JSON health response such as `{"status":"ok","environment":"development"}`
 
@@ -160,10 +214,15 @@ The browser UI lets you choose between two answer modes:
 - `OpenAI`: sends the retrieved chunks to the backend OpenAI chat provider for a more natural response
 - `Extractive`: returns a grounded extractive answer built directly from the retrieved chunks without calling OpenAI
 
+This selection controls answer generation only. Document routing can still use OpenAI
+in either mode, according to `ROUTER_PROVIDER`.
+
 Important notes:
 
 - the API key stays on the backend only and is never exposed to the frontend
 - the frontend sends only the selected answer mode, never any secret
+- OpenAI text appears progressively; evidence and counts arrive with the completed response
+- interrupted text remains visible and clearly marked incomplete; resubmission is manual
 - if `OpenAI` is selected but the backend is missing `OPENAI_API_KEY`, lacks network access, or hits provider errors, the UI shows the backend error message instead of silently failing
 
 ## Document Routing
@@ -386,7 +445,6 @@ The current integration cases cover:
 - password-sharing guidance
 - remote-work allowance rules
 
-<img width="896" height="1240" alt="image" src="https://github.com/user-attachments/assets/87aae80d-3682-437c-9f53-439e32068808" />
 
 
 ## Current Limitations
@@ -396,4 +454,70 @@ The current integration cases cover:
 - the browser UI is intentionally simple and built for demo use
 - there is no conversation memory yet
 - there is no authentication or multi-user support yet
-- document updates still require manual re-indexing
+- run one application process; multi-process indexing coordination is not implemented
+- scanned PDFs require OCR before upload; Word documents are not supported
+
+## Frontend development and validation
+
+Run FastAPI on port 8000 and `npm run dev` from `frontend/` for Vite development with
+API proxying. The build emits assets into `app/web/static/`, which FastAPI serves at
+the same origin. Rebuild after UI changes when reviewing the backend-served app.
+
+Models own API, stream parsing and browser preferences. ViewModel hooks own application
+state and actions. Views receive presentation state and callbacks. The composition root
+wires the layers together. `npm run lint` enforces and tests these boundaries.
+
+Frontend checks, from `frontend/`: `npm run lint`, `npm test`, `npm run build`,
+`npm run test:e2e`. Playwright covers responsive layouts, both themes, loading, streaming,
+error recovery and safe text rendering. See [validation notes](validation/README.md)
+for package-date evidence and the separate optional live OpenAI check.
+
+The streaming endpoint accepts the existing ask request and emits `delta` events with
+`{ "text": "..." }`, followed by one terminal `result` containing the existing full
+answer response, or a terminal `error` with `{ "message": "..." }`. Clients must treat
+EOF without a result as interruption. The JSON ask endpoint remains compatible.
+
+### Manage policies
+
+Open **Manage policies** in the header or visit `/policies`. The page uses the same
+responsive layout and light/dark preference as the question page. Navigation keeps
+your question draft and previous answer intact.
+
+Upload a PDF, HTML or UTF-8 text file (one at a time, at most 20 MiB). PDFs must have
+readable text and be unencrypted; OCR and Word files are not supported. Extraction
+is limited to 1,000 PDF pages / 2 million characters and 10,000 chunks per revision.
+The original is stored privately under a generated filename and downloaded as an
+attachment. Uploaded HTML is extracted to text, never executed or embedded.
+
+Select a policy to read its content, download the original, rename its display
+title, inspect chunks or delete it. Deletion removes it from future answers;
+previous answers remain historical snapshots. Sample questions requiring deleted
+policies disappear. Duplicate original filenames are rejected.
+
+Chunking supports character length, sentence/punctuation boundaries, paragraphs,
+and HTML headings/sections (HTML files only). Size and overlap are measured in
+characters. Default settings remain 900 / 150. HTML heading context counts towards
+the size limit. Overlap must leave room for that heading context. Preview changes first, then apply them to update search. Failed or
+interrupted processing retains the previous searchable revision. Failed uploads
+can be retried or deleted. Processing status is persisted and can be refreshed.
+
+The catalogue, originals, revisions and managed Chroma index live in
+`data/policies/` (relative to `VECTOR_STORE_DIR`'s parent), excluded from Git.
+The existing three PDFs are imported once, preserving their identities and titles.
+Back up this whole directory together. Run one application process: management
+writes are serialized and retrieval snapshots use a short publication lock. There is no authentication
+layer; retain the app's local/internal deployment boundary.
+
+`policy-rag-index` also updates the managed catalogue through the shared extraction
+and revision pipeline. Its `--reset` option resets the legacy CLI collection; it
+does not delete policies uploaded through the UI.
+
+Management APIs are under `/api/policies`, with operation status at
+`/api/operations/{id}`. Uploads use a raw body and URL-encoded `X-Filename` header.
+Mutations reject cross-origin browser requests; rename/delete/apply check policy
+versions. The existing JSON and streamed question endpoints remain compatible,
+with an additional optional source-location label for HTML/text policies.
+
+OpenAI embeddings use bounded input pieces and requests. Long-chunk vectors are
+combined using length-weighted pooling and normalization; stored chunks and their
+previewed text remain exact. No tokenizer downloads are required.

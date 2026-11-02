@@ -12,6 +12,7 @@ class AskRequest(BaseModel):
 class SourceResponse(BaseModel):
     document_name: str
     page_number: int
+    location: str = ""
     chunk_id: str
 
 
@@ -25,6 +26,7 @@ class RetrievedChunkResponse(BaseModel):
     chunk_id: str
     document_name: str
     page_number: int
+    location: str = ""
     chunk_index: int
     distance: float
     text: str

@@ -1,0 +1,52 @@
+[
+  {
+    "title": "Everyday questions",
+    "questions": [
+      {
+        "id": "public-ai",
+        "question": "Can I put customer data into a public AI tool?",
+        "policyIds": ["northstar-ai-acceptable-use-policy"]
+      },
+      {
+        "id": "core-hours",
+        "question": "What are our core working hours?",
+        "policyIds": ["northstar-employee-handbook"]
+      },
+      {
+        "id": "lost-laptop",
+        "question": "What should I do if I lose my company laptop?",
+        "policyIds": ["northstar-information-security-policy"]
+      },
+      {
+        "id": "password-sharing",
+        "question": "Can I share my password or MFA codes with a colleague?",
+        "policyIds": ["northstar-information-security-policy"]
+      }
+    ]
+  },
+  {
+    "title": "Across policies",
+    "questions": [
+      {
+        "id": "remote-work",
+        "question": "For remote work, what manager approval and information security controls do I need?",
+        "policyIds": ["northstar-employee-handbook", "northstar-information-security-policy"]
+      },
+      {
+        "id": "confidential-notes",
+        "question": "Can I use AI to summarise confidential meeting notes, and where may I store the output?",
+        "policyIds": ["northstar-ai-acceptable-use-policy", "northstar-information-security-policy"]
+      },
+      {
+        "id": "ai-incident",
+        "question": "If I paste customer data into a public AI tool, what incident reporting steps must I follow?",
+        "policyIds": ["northstar-ai-acceptable-use-policy", "northstar-information-security-policy"]
+      },
+      {
+        "id": "disciplinary-ai",
+        "question": "Can I use AI to draft a disciplinary warning, and what conduct and review rules apply?",
+        "policyIds": ["northstar-ai-acceptable-use-policy", "northstar-employee-handbook"]
+      }
+    ]
+  }
+]

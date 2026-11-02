@@ -22,6 +22,7 @@ class RetrievedChunk:
     char_end: int
     text: str
     distance: float
+    location: str = ""
 
 
 class ChunkRetriever:
@@ -51,6 +52,7 @@ class ChunkRetriever:
         query: str,
         top_k: int,
         document_ids: list[str] | None,
+        revisions: list[str] | None = None,
     ) -> list[RetrievedChunk]:
         query = query.strip()
         if not query:
@@ -63,6 +65,11 @@ class ChunkRetriever:
                 where = {"document_id": document_ids[0]}
             else:
                 where = {"document_id": {"$in": document_ids}}
+        if revisions is not None:
+            if not revisions:
+                return []
+            revision_filter = {"revision": {"$in": revisions}}
+            where = {"$and": [where, revision_filter]} if where else revision_filter
         result = self._collection.query(
             query_embeddings=[query_embedding],
             n_results=top_k,
@@ -89,6 +96,7 @@ class ChunkRetriever:
                     char_end=int(metadata["char_end"]),
                     text=document,
                     distance=float(distance),
+                    location=str(metadata.get("location", "")),
                 )
             )
 
