@@ -1,0 +1,16 @@
+{
+  "capturedAt": "2026-11-02T22:21:25.534Z",
+  "question": "Can I put customer data into a public AI tool? Please answer briefly in three sentences, with policy citations.",
+  "answerProvider": "openai",
+  "streamedBeforeCompletion": true,
+  "sourceCount": 4,
+  "consultedPolicies": [
+    "AI Acceptable Use Policy",
+    "Information Security and Data Handling Policy"
+  ],
+  "video": "live-question-demo.webm",
+  "browserErrors": [],
+  "playbackVerified": true,
+  "videoDurationSeconds": 15.36,
+  "videoSize": "1440×1000"
+}

@@ -78,3 +78,13 @@ comparisons of header, navigation, title, subtitle and first-card geometry acros
 The existing 20 frontend tests, MVVM lint, type checking and production build passed.
 All 14 Playwright scenarios passed after the alignment fix; desktop light and
 mobile dark screenshots were inspected for both pages.
+
+## Published UI media
+
+Fresh Playwright screenshots cover the light and dark question page, narrow mobile
+layout and policy-management settings. The README's animated preview and original
+1440×1000 WebM show a real streamed OpenAI answer with four source references.
+Browser playback, seeking and final-answer framing were checked before publication.
+The capture summary and reproducible opt-in scripts are included with the media.
+All 77 backend, 20 frontend, 8 integration and 14 browser checks passed before merge.
+No new packages were installed; only the public synthetic sample PDFs were used.

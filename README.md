@@ -11,6 +11,8 @@ It mimics a realistic workplace tool: a user asks natural-language questions abo
 - React/TypeScript MVVM frontend with build-time Tailwind and enforced architecture boundaries
 - incremental OpenAI answer streaming with explicit interruption handling
 - sample questions for everyday lookups and guidance spanning multiple policies; selection fills the editor without submitting
+- policy management for PDF, HTML and text uploads, display titles, deletion and original-file downloads
+- configurable chunking with source inspection, preview/apply and revision-safe indexing
 - `POST /api/ask` JSON API for grounded answers
 - local PDF ingestion from the `documents/` directory
 - page-level extraction and chunk-level metadata capture
@@ -22,13 +24,45 @@ It mimics a realistic workplace tool: a user asks natural-language questions abo
 - isolated RAG integration tests against the current fake PDF corpus
 - unit test coverage across ingestion, routing, retrieval, answering, and API behavior
 
-<img width="2559" height="1282" alt="image" src="https://github.com/user-attachments/assets/58c308ba-42a2-4bbb-a65f-69b92963fb0b" />
-<img width="1240" height="1148" alt="image" src="https://github.com/user-attachments/assets/3f95d0a2-0fa6-4d95-8f40-545f7a7110de" />
 
+
+## Screenshots and live demo
+
+Captured with Playwright against the running app and its synthetic NorthStar policies.
+
+### Live question demonstration
+
+[![Watch a real question receive streamed OpenAI guidance and policy references](docs/media/live-question-preview.gif)](docs/media/live-question-demo.webm)
+
+[Open the full-resolution video](docs/media/live-question-demo.webm) · [Download WebM](https://raw.githubusercontent.com/ZakYeo/policy-rag-assistant/refs/heads/main/docs/media/live-question-demo.webm)
+
+This silent, 15-second recording submits a real question, receives an OpenAI answer
+as it streams, and shows the supporting policy references. It also visits dark mode,
+the mobile layout and policy management. The answer is live, with no mocked responses.
+The animated preview plays directly in this README; the full-resolution WebM is available for playback or download.
+
+### Policy Desk
+
+![NorthStar Policy Desk with a completed live answer and supporting policy evidence](docs/media/policy-desk-light.png)
+
+### Policy management
+
+![NorthStar policy library with document details and configurable chunking settings](docs/media/manage-policies-light.png)
+
+<details>
+<summary>Dark theme and mobile layout</summary>
+
+![Policy Desk in dark mode with the same live answer](docs/media/policy-desk-dark.png)
+
+<img src="docs/media/policy-desk-mobile-dark.png" width="390" alt="Responsive Policy Desk on a narrow mobile screen in dark mode" />
+
+</details>
+
+Capture and playback-validation commands are documented in [the media notes](docs/media/README.md).
 
 ## Current Document Set
 
-Policy source documents currently live in [`documents/`](/home/zakye/policy-rag-assistant/documents):
+Policy source documents currently live in [`documents/`](documents/):
 
 - `northstar-ai-acceptable-use-policy.pdf`
 - `northstar-employee-handbook.pdf`
@@ -58,7 +92,7 @@ To keep the demo focused, the initial version should avoid production concerns s
 
 ## Repository Status
 
-This repository now has the initial project scaffold in place.
+This repository contains a working policy assistant and policy-management interface.
 
 Current setup includes:
 
@@ -70,7 +104,9 @@ Current setup includes:
 - local Chroma indexing with configurable embedding providers
 - document routing that can choose relevant PDFs before chunk retrieval
 - retrieval and grounded answer generation services
-- a small unit test suite in `tests/`
+- a React/TypeScript MVVM interface in `frontend/`
+- persistent policy management and revision publication in `app/policies/`
+- backend unit and API regression coverage in `tests/`
 - a separate RAG integration test suite in `integration_tests/`
 
 The app is now a working MVP prototype. It can ingest the local policy PDFs, build a local vector index, route each question to the most relevant documents, retrieve matching chunks, and return grounded answers through both a JSON API and a simple browser UI.
@@ -126,7 +162,7 @@ cd ..
 
 ### 3. Configure environment variables
 
-Copy [`.env.example`](/home/zakye/policy-rag-assistant/.env.example) to `.env` and set your real `OPENAI_API_KEY`.
+Copy [`.env.example`](.env.example) to `.env` and set your real `OPENAI_API_KEY`.
 
 Example:
 
@@ -140,7 +176,10 @@ The default MVP answer mode is now `openai`, while embeddings still default to t
 
 The current FastAPI app exposes:
 
-- `GET /` for the browser demo UI
+- `GET /` for the policy question page
+- `GET /policies` for policy management
+- `/api/policies` for policy content, uploads, metadata, deletion, chunks and preview/apply
+- `GET /api/operations/{id}` for persisted processing status
 - `GET /api/status` for basic app status and paths
 - `POST /api/ask` for the grounded question-answer API
 - `POST /api/ask/stream` for incremental OpenAI answers over server-sent events
@@ -406,7 +445,6 @@ The current integration cases cover:
 - password-sharing guidance
 - remote-work allowance rules
 
-<img width="896" height="1240" alt="image" src="https://github.com/user-attachments/assets/87aae80d-3682-437c-9f53-439e32068808" />
 
 
 ## Current Limitations
@@ -416,7 +454,8 @@ The current integration cases cover:
 - the browser UI is intentionally simple and built for demo use
 - there is no conversation memory yet
 - there is no authentication or multi-user support yet
-- document updates still require manual re-indexing
+- run one application process; multi-process indexing coordination is not implemented
+- scanned PDFs require OCR before upload; Word documents are not supported
 
 ## Frontend development and validation
 
