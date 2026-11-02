@@ -5,6 +5,7 @@ test('responds with real API-shaped evidence and adapts when resized', async ({ 
   const failures: string[] = [];
   page.on('pageerror', (error) => failures.push(error.message));
   await page.route('**/api/ask', (route) => route.fulfill({ json: answer }));
+  await page.route('**/api/ask/stream', (route) => route.fulfill({ contentType: 'text/event-stream', body: `event: delta\ndata: ${JSON.stringify({ text: answer.answer })}\n\nevent: result\ndata: ${JSON.stringify(answer)}\n\n` }));
   await page.setViewportSize({ width: 1572, height: 1000 });
   await page.goto('/');
   await page.getByRole('textbox', { name: 'Your question' }).fill('Can I put customer data into a public AI tool?');
@@ -64,6 +65,7 @@ test('shows skeletons and keeps form and theme usable while waiting', async ({ p
   const gate = new Promise<void>((resolve) => { release = resolve; });
   await page.route('**/api/ask', async (route) => { await gate; await route.fulfill({ json: answer }); });
   await page.goto('/');
+  await page.getByRole('radio', { name: 'Direct policy extracts (Extractive)' }).check();
   await page.getByRole('textbox', { name: 'Your question' }).fill('Can I use AI?');
   await page.getByRole('button', { name: 'Ask a question', exact: true }).click();
   try {
@@ -79,4 +81,49 @@ test('shows skeletons and keeps form and theme usable while waiting', async ({ p
   await expect(page.locator('.answer-text')).toHaveText(answer.answer);
   await expect(page.getByTestId('skeleton')).toHaveCount(0);
   await expect(page.getByRole('textbox', { name: 'Your question' })).toHaveValue('My next question');
+});
+
+test('streams text over HTTP before completion and retains state while resized', async ({ page, request }, info) => {
+  await page.goto('/');
+  await page.getByRole('textbox', { name: 'Your question' }).fill('stream success');
+  await page.getByRole('button', { name: 'Ask a question', exact: true }).click();
+  try {
+    await expect(page.locator('.answer-text')).toHaveText('First part. ');
+    await expect(page.getByTestId('skeleton').first()).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Checking policies…' })).toBeDisabled();
+    for (const [width, height] of [[320, 700], [844, 390], [1572, 1000]]) {
+      await page.setViewportSize({ width, height });
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      await expect(page.locator('.answer-text')).toHaveText('First part. ');
+    }
+    await page.getByRole('button', { name: 'Switch to dark mode' }).click();
+    await page.screenshot({ path: info.outputPath('stream-in-progress.png'), fullPage: true });
+  } finally { expect((await request.post('/__test__/release/success')).ok()).toBe(true); }
+  await expect(page.locator('.answer-text')).toHaveText('First part. Complete answer.');
+  await expect(page.getByTestId('skeleton')).toHaveCount(0);
+  await expect(page.getByText('Chunk: test-p1-c0')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Ask a question', exact: true })).toBeEnabled();
+});
+
+test('keeps interrupted streamed text clearly incomplete and allows a new submission', async ({ page, request }) => {
+  await page.goto('/');
+  await page.getByRole('textbox', { name: 'Your question' }).fill('stream failure');
+  await page.getByRole('button', { name: 'Ask a question', exact: true }).click();
+  await expect(page.locator('.answer-text')).toHaveText('First part. ');
+  expect((await request.post('/__test__/release/failure')).ok()).toBe(true);
+  await expect(page.getByRole('alert')).toContainText('could not be completed');
+  await expect(page.getByText('Incomplete answer — the response was interrupted.')).toBeVisible();
+  await expect(page.locator('.answer-text')).toHaveText('First part. ');
+  await expect(page.getByRole('textbox', { name: 'Your question' })).toHaveValue('stream failure');
+  await expect(page.getByRole('button', { name: 'Ask a question', exact: true })).toBeEnabled();
+});
+
+test('extractive mode works against the real local policy index', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('radio', { name: 'Direct policy extracts (Extractive)' }).check();
+  await page.getByRole('textbox', { name: 'Your question' }).fill('Can I put customer data into a public AI tool?');
+  await page.getByRole('button', { name: 'Ask a question', exact: true }).click();
+  await expect(page.locator('.answer-text')).toContainText('Prohibited', { timeout: 15000 });
+  await expect(page.getByRole('heading', { name: 'Policy references' })).toBeVisible();
+  await expect(page.getByText('Extractive', { exact: true })).toBeVisible();
 });

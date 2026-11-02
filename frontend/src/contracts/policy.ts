@@ -13,7 +13,9 @@ export interface AskResponse {
 }
 export interface PolicyClient {
   ask(question: string, provider: AnswerProvider, signal: AbortSignal): Promise<AskResponse>;
+  stream(question: string, signal: AbortSignal): AsyncIterable<PolicyStreamEvent>;
 }
+export type PolicyStreamEvent = { type: 'delta'; text: string } | { type: 'result'; response: AskResponse };
 export type DeskStatus = 'idle' | 'loading' | 'streaming' | 'success' | 'error';
 export interface DeskState {
   question: string;

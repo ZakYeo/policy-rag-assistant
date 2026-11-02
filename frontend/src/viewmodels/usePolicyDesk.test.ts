@@ -5,7 +5,7 @@ import { answer } from '../test/fixtures';
 
 describe('policy question flow', () => {
   test('validates blank questions without contacting the API', async () => {
-    const client = { ask: vi.fn() };
+    const client = { ask: vi.fn(), stream: vi.fn() };
     const { result } = renderHook(() => usePolicyDesk(client));
     act(() => result.current.setQuestion('   '));
     await act(() => result.current.ask());
@@ -15,7 +15,7 @@ describe('policy question flow', () => {
 
   test('captures the selected mode and keeps the editor usable during a request', async () => {
     let finish!: (value: typeof answer) => void;
-    const client = { ask: vi.fn(() => new Promise<typeof answer>((resolve) => { finish = resolve; })) };
+    const client = { ask: vi.fn(() => new Promise<typeof answer>((resolve) => { finish = resolve; })), stream: vi.fn() };
     const { result } = renderHook(() => usePolicyDesk(client));
     act(() => { result.current.setQuestion('  What is the rule? '); result.current.setProvider('extractive'); });
     act(() => { void result.current.ask(); });
@@ -32,14 +32,47 @@ describe('policy question flow', () => {
   });
 
   test('shows provider errors, preserves question text and allows resubmission', async () => {
-    const client = { ask: vi.fn().mockRejectedValueOnce(new Error('Provider unavailable')).mockResolvedValue(answer) };
+    const client = { ask: vi.fn().mockRejectedValueOnce(new Error('Provider unavailable')).mockResolvedValue(answer), stream: vi.fn() };
     const { result } = renderHook(() => usePolicyDesk(client));
-    act(() => result.current.setQuestion('Can I use AI?'));
+    act(() => { result.current.setQuestion('Can I use AI?'); result.current.setProvider('extractive'); });
     await act(() => result.current.ask());
     expect(result.current.error).toBe('Provider unavailable');
     expect(result.current.question).toBe('Can I use AI?');
     await act(() => result.current.ask());
     await waitFor(() => expect(result.current.response?.answer).toBe(answer.answer));
     expect(result.current.error).toBeNull();
+  });
+
+  test('shows partial OpenAI text before completion and retains it on failure', async () => {
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => { release = resolve; });
+    const client = { ask: vi.fn(), async *stream() {
+      yield { type: 'delta' as const, text: 'Partial answer' };
+      await gate;
+      throw new Error('Connection lost');
+    } };
+    const { result } = renderHook(() => usePolicyDesk(client));
+    act(() => result.current.setQuestion('What is the policy?'));
+    act(() => { void result.current.ask(); });
+    await waitFor(() => expect(result.current.answer).toBe('Partial answer'));
+    expect(result.current.busy).toBe(true);
+    expect(result.current.response).toBeNull();
+    await act(async () => release());
+    await waitFor(() => expect(result.current.error).toBe('Connection lost'));
+    expect(result.current.answer).toBe('Partial answer');
+    expect(result.current.busy).toBe(false);
+    expect(client.ask).not.toHaveBeenCalled();
+  });
+
+  test('uses the terminal response as the authoritative answer and evidence', async () => {
+    const client = { ask: vi.fn(), async *stream() {
+      yield { type: 'delta' as const, text: 'First words' };
+      yield { type: 'result' as const, response: answer };
+    } };
+    const { result } = renderHook(() => usePolicyDesk(client));
+    act(() => result.current.setQuestion('What is the policy?'));
+    await act(() => result.current.ask());
+    expect(result.current.answer).toBe(answer.answer);
+    expect(result.current.response?.sources).toEqual(answer.sources);
   });
 });

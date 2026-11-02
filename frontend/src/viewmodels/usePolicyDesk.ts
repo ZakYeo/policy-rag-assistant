@@ -3,6 +3,7 @@ import type { AnswerProvider, AskResponse, DeskState, DeskViewModel, PolicyClien
 
 type Action = { type: 'question'; value: string } | { type: 'provider'; value: AnswerProvider }
   | { type: 'begin'; question: string } | { type: 'result'; value: AskResponse }
+  | { type: 'delta'; text: string }
   | { type: 'error'; value: string };
 const initialState: DeskState = {
   question: '', provider: 'openai', submittedQuestion: '', status: 'idle', answer: '', response: null, error: null,
@@ -13,6 +14,7 @@ function reducer(state: DeskState, action: Action): DeskState {
     case 'provider': return { ...state, provider: action.value };
     case 'begin': return { ...state, status: 'loading', submittedQuestion: action.question, answer: '', response: null, error: null };
     case 'result': return { ...state, status: 'success', response: action.value, answer: action.value.answer, error: null };
+    case 'delta': return { ...state, status: 'streaming', answer: state.answer + action.text };
     case 'error': return { ...state, status: 'error', error: action.value };
   }
 }
@@ -32,8 +34,18 @@ export function usePolicyDesk(client: PolicyClient): DeskViewModel {
     pending.current = controller;
     dispatch({ type: 'begin', question });
     try {
-      const result = await client.ask(question, state.provider, controller.signal);
-      if (!controller.signal.aborted) dispatch({ type: 'result', value: result });
+      if (state.provider === 'openai') {
+        let completed = false;
+        for await (const event of client.stream(question, controller.signal)) {
+          if (controller.signal.aborted) return;
+          if (event.type === 'delta') dispatch({ type: 'delta', text: event.text });
+          else { dispatch({ type: 'result', value: event.response }); completed = true; break; }
+        }
+        if (!completed && !controller.signal.aborted) throw new Error('The answer stream was interrupted. Please try again.');
+      } else {
+        const result = await client.ask(question, state.provider, controller.signal);
+        if (!controller.signal.aborted) dispatch({ type: 'result', value: result });
+      }
     } catch (error) {
       if (!controller.signal.aborted) dispatch({ type: 'error', value: error instanceof Error ? error.message : 'Unable to check policies. Please try again.' });
     } finally {
