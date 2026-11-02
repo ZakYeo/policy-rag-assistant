@@ -1,13 +1,13 @@
 import type { LibraryViewModel } from '../contracts/library';
+import { PageIntro } from './PageIntro';
 import { Skeleton } from './Skeleton';
 import { ChunkSettingsForm } from './ChunkSettingsForm';
 import { ChunkList, fieldStyle, primaryButton, secondaryButton } from './LibraryComponents';
 
 export function PolicyLibrary({ vm }: { vm: LibraryViewModel }) {
   return <main id="main" className="page-width flex-1 py-10 min-[640px]:py-12">
-    <h1 className="text-[1.8rem] font-bold tracking-tight">Manage policies</h1>
-    <p className="mt-2 mb-8 text-lg text-muted">Review the policies that inform NorthStar’s guidance.</p>
-    <form onSubmit={(event) => { event.preventDefault(); void vm.upload(); }} className="mb-7 rounded-lg border border-line bg-card p-5 shadow-sm">
+    <PageIntro title="Manage policies" description="Review the policies that inform NorthStar’s guidance." />
+    <form onSubmit={(event) => { event.preventDefault(); void vm.upload(); }} className="panel mb-10">
       <h2 className="font-bold">Upload a policy</h2><p className="mt-1 text-sm text-muted">PDF, HTML or UTF-8 text · up to 20 MiB · readable text required</p>
       <div className="mt-4 flex flex-wrap items-end gap-4"><label className="min-w-0 flex-1 text-sm font-semibold">Policy file<input type="file" accept=".pdf,.html,.htm,.txt" disabled={vm.busy} className={`${fieldStyle} file:mr-3 file:rounded file:border-0 file:bg-inset file:px-3 file:py-1 file:text-ink`} onChange={(event) => vm.setFile(event.target.files?.[0] ?? null)} /></label><button className={primaryButton} disabled={!vm.file || vm.busy}>Upload policy</button></div>
     </form>
@@ -15,7 +15,7 @@ export function PolicyLibrary({ vm }: { vm: LibraryViewModel }) {
     {vm.operation && <p role="status" className="mb-5 rounded border border-line bg-inset p-4 text-sm">{vm.operation.stage}{vm.operation.status === 'failed' ? ' — see details below.' : ''}</p>}
     {vm.error && <div role="alert" className="mb-6 rounded border border-error bg-error-surface p-4 text-error">{vm.error} <button className="underline" onClick={() => void vm.refresh()}>Refresh policies</button></div>}
     <div className="grid min-w-0 items-start gap-7 min-[960px]:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
-      <section aria-labelledby="policies-heading" className="min-w-0 rounded-lg border border-line bg-card p-5 shadow-sm">
+      <section aria-labelledby="policies-heading" className="panel">
         <div className="flex items-center justify-between gap-3 border-b border-line-subtle pb-4"><h2 id="policies-heading" className="text-lg font-bold">Policies</h2><span className="text-sm text-muted">{vm.policies.length} uploaded</span></div>
         {vm.loading && !vm.policies.length ? <Skeleton rows={5} /> : <ul className="mt-3 space-y-2">{vm.policies.map((policy) => <li key={policy.id}>
           <button type="button" disabled={vm.busy} onClick={() => void vm.select(policy.id)} aria-current={vm.detail?.id === policy.id ? 'true' : undefined}
@@ -27,7 +27,7 @@ export function PolicyLibrary({ vm }: { vm: LibraryViewModel }) {
         <button className={`${secondaryButton} mt-4`} disabled={vm.loading} onClick={() => void vm.refresh()}>Refresh policies</button>
         {!vm.loading && !vm.policies.length && <p className="mt-4 text-muted">No policies uploaded yet.</p>}
       </section>
-      <section aria-label="Selected policy" aria-busy={vm.loading} className="min-w-0 rounded-lg border border-line bg-card p-5 min-[640px]:p-7 shadow-sm">
+      <section aria-label="Selected policy" aria-busy={vm.loading} className="panel">
         {vm.loading ? <Skeleton rows={7} /> : vm.detail ? <>
           <h2 className="text-xl font-bold [overflow-wrap:anywhere]">{vm.detail.title}</h2>
           <p className="technical-text mt-2">{vm.detail.filename}</p>

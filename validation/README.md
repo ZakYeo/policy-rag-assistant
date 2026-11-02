@@ -66,3 +66,15 @@ The original untracked design-exploration files remain local. Only the user-sele
 Deployment remains a single local/internal app process. Back up `data/policies/`
 as one unit. The registry imports the seed PDFs once; deleting a managed seed
 policy does not cause it to reappear after a restart.
+
+## Page alignment follow-up
+
+The question and management pages now share their page-intro component, typography,
+responsive text space and panel padding. A stable root scrollbar gutter prevents
+horizontal movement when navigating between pages with different scroll heights.
+The browser regression first reproduced a 7.2px subtitle displacement, then passed
+comparisons of header, navigation, title, subtitle and first-card geometry across
+16 window shapes (including breakpoint boundaries, 320px mobile and tall desktop).
+The existing 20 frontend tests, MVVM lint, type checking and production build passed.
+All 14 Playwright scenarios passed after the alignment fix; desktop light and
+mobile dark screenshots were inspected for both pages.
