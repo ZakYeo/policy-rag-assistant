@@ -41,6 +41,7 @@
   --on-accent: #ffffff;
   --error: #a02b2b;
   --error-surface: #fff2ef;
+  --skeleton: #e5e2da;
 }
 
 :root[data-theme='dark'] {
@@ -57,14 +58,23 @@
   --on-accent: #152740;
   --error: #ffc1b6;
   --error-surface: #3a2426;
+  --skeleton: #35414e;
 }
 
 @layer base {
   body { @apply m-0 min-w-0 bg-paper font-sans text-ink antialiased; }
   #root { @apply flex min-h-dvh flex-col; }
-  button, input, textarea, summary { @apply outline-offset-4 focus-visible:outline-2 focus-visible:outline-accent; }
+  button, input, textarea, summary { @apply outline-offset-4 focus-visible:outline-2 focus-visible:outline-accent; transition: background-color 140ms ease, border-color 140ms ease; }
   button:not(:disabled), summary { @apply cursor-pointer; }
   ::selection { background: var(--accent); color: var(--on-accent); }
+}
+
+.skeleton { background: var(--skeleton); animation: skeleton-pulse 1.4s ease-in-out infinite; }
+.reveal { animation: content-reveal 180ms ease-out; }
+@keyframes skeleton-pulse { 50% { opacity: .45; } }
+@keyframes content-reveal { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
 }
 
 @layer components {

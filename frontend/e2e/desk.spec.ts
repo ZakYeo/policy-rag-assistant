@@ -58,3 +58,25 @@ test('validates blank input and renders extractive content safely', async ({ pag
   await expect(page.locator('.answer-text')).toContainText('<img');
   await expect(page.locator('img')).toHaveCount(0);
 });
+
+test('shows skeletons and keeps form and theme usable while waiting', async ({ page }, info) => {
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => { release = resolve; });
+  await page.route('**/api/ask', async (route) => { await gate; await route.fulfill({ json: answer }); });
+  await page.goto('/');
+  await page.getByRole('textbox', { name: 'Your question' }).fill('Can I use AI?');
+  await page.getByRole('button', { name: 'Ask a question', exact: true }).click();
+  try {
+    await expect(page.getByTestId('skeleton').first()).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Checking policies…' })).toBeDisabled();
+    await page.getByRole('textbox', { name: 'Your question' }).fill('My next question');
+    await page.getByRole('button', { name: 'Switch to dark mode' }).click();
+    await page.setViewportSize({ width: 390, height: 600 });
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    expect(await page.getByTestId('skeleton').first().evaluate((element) => getComputedStyle(element).animationName)).toBe('none');
+    await page.screenshot({ path: info.outputPath('mobile-dark-loading.png'), fullPage: true });
+  } finally { release(); }
+  await expect(page.locator('.answer-text')).toHaveText(answer.answer);
+  await expect(page.getByTestId('skeleton')).toHaveCount(0);
+  await expect(page.getByRole('textbox', { name: 'Your question' })).toHaveValue('My next question');
+});

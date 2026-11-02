@@ -15,6 +15,7 @@ export function PolicyDesk({ vm, theme }: { vm: DeskViewModel; theme: ThemeViewM
       </div>
       <QuestionForm vm={vm} />
       {vm.error && <p role="alert" className="mb-6 rounded border border-error bg-error-surface p-4 text-error">{vm.error}</p>}
+      <p role="status" className="sr-only">{vm.status === 'loading' ? 'Searching NorthStar policies.' : vm.status === 'streaming' ? 'Receiving the answer.' : vm.status === 'success' ? 'Answer and policy references are ready.' : ''}</p>
       <Results vm={vm} />
     </main>
     <footer className="mt-12 border-t border-line py-7 text-center text-sm text-muted">NorthStar Policy Desk · Internal Employee Guidance</footer>
