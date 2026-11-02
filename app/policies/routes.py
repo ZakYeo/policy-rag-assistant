@@ -40,7 +40,7 @@ def policy_detail(policy_id: str, library=Depends(library_dependency)):
     policy = find_policy(library, policy_id)
     revision = library.store.revision(policy['revision']) if policy['revision'] else None
     return {**public_policy(policy), 'content': [
-        {'text': page['text'], 'location': page.get('location') or f"Page {page['page_number']}"}
+        {'section_id': page.get('section_id', ''), 'text': page['text'], 'location': page.get('location') or f"Page {page['page_number']}"}
         for page in revision['content']
     ] if revision else []}
 

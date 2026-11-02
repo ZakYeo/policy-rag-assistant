@@ -21,6 +21,8 @@ class Chunk:
     text: str
     revision: str = ""
     location: str = ""
+    section_id: str = ""
+    heading_context: str = ""
 
 
 def split_text(text: str, chunk_size: int = 900, chunk_overlap: int = 150, max_chunks: int | None = None) -> list[tuple[int, int, str]]:

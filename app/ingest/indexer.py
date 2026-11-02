@@ -43,6 +43,8 @@ class ChunkIndexer:
             {
                 "revision": chunk.revision,
                 "location": chunk.location,
+                "section_id": chunk.section_id,
+                "heading_context": chunk.heading_context,
                 "document_id": chunk.document_id,
                 "document_name": chunk.document_name,
                 "source_path": chunk.source_path,
