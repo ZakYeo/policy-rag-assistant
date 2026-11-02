@@ -1,3 +1,9 @@
+import { createPolicyApi } from '../models/policyApi';
+import { usePolicyDesk } from '../viewmodels/usePolicyDesk';
+import { PolicyDesk } from '../views/PolicyDesk';
+
+const client = createPolicyApi();
 export function App() {
-  return <h1 className="p-8 text-2xl font-semibold">NorthStar Policy Desk</h1>;
+  const vm = usePolicyDesk(client);
+  return <PolicyDesk vm={vm} />;
 }
