@@ -22,7 +22,7 @@ The optional live check is separate: with the actual app on port 8001 and backen
 
 Browser screenshots/traces are generated under ignored `frontend/test-results/`; the HTML report is under `frontend/playwright-report/`.
 
-## Completed validation
+## Initial question-page validation
 
 - 48 Python unit tests and 8 isolated RAG integration cases passed. The added sample-question checks verify the catalog covers the three current PDFs and all four cross-policy prompts retrieve their declared documents with the local pipeline.
 - 16 frontend tests, ESLint/MVVM RuleTester, TypeScript checking and the Vite/Tailwind production build passed.
@@ -32,3 +32,37 @@ Browser screenshots/traces are generated under ignored `frontend/test-results/`;
 - The initial implementation received a fresh independent review of code and desktop/mobile screenshots. Its two minor findings were resolved. Targeted follow-up independently passed the then-current 15 frontend tests and 11 Python streaming tests, approved the fixes with no blockers, and scored that implementation 95/100.
 
 The original untracked design-exploration files remain local. Only the user-selected card-based reference is included with the implementation commits.
+
+## Policy management validation — 2026-11-02
+
+- **77 backend tests**, **20 frontend tests**, **8 RAG integration cases**, and
+  **13 Playwright scenarios** passed. Ruff, ESLint/MVVM, TypeScript and the
+  production build passed. No new packages were installed.
+- Browser coverage includes upload, rename, delete/cancel, content, chunks,
+  preview invalidation, applying changes, HTML controls, invalid/duplicate files,
+  direct navigation, question-draft preservation, both themes and resizing from
+  320px through 1920px. Tests use a temporary policy library, never live policies.
+- A held indexing operation proves the previous revision remains searchable.
+  A browser test reloads during held indexing, simulates a status-request failure,
+  and verifies automatic reconnection and eventual completion.
+- Regression coverage includes 6,001-chunk indexing, atomic publication/operation
+  completion, interrupted-job recovery, canonical HTML source spans, preserved PDF
+  paragraphs and byte-bounded OpenAI embedding inputs with vector pooling.
+- A fresh independent reviewer applied the **thermo-nuclear-code-quality-review**
+  skill and initially requested changes. All findings were implemented in further
+  tested commits: indexing concurrency, bounded vector writes, atomic operation
+  publication, browser recovery, source provenance and embedding request limits.
+  Re-review approved the work at **91/100**, with no blockers; the final PDF
+  paragraph correction was independently checked and approved too.
+- OpenAI adapter limits were tested with a fake client, not paid API calls.
+  Existing streamed-answer behavior passed deterministic HTTP/browser regression
+  checks. Earlier live-provider evidence above belongs to the original question
+  page implementation.
+- Desktop light and mobile dark screenshots were inspected under
+  `frontend/test-results/`; a read-only Playwright check also loaded the real
+  review app at `http://localhost:8001/policies` and verified its seeded policy
+  settings and 320px layout.
+
+Deployment remains a single local/internal app process. Back up `data/policies/`
+as one unit. The registry imports the seed PDFs once; deleting a managed seed
+policy does not cause it to reappear after a restart.

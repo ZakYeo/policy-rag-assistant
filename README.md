@@ -458,7 +458,7 @@ policies disappear. Duplicate original filenames are rejected.
 Chunking supports character length, sentence/punctuation boundaries, paragraphs,
 and HTML headings/sections (HTML files only). Size and overlap are measured in
 characters. Default settings remain 900 / 150. HTML heading context counts towards
-the size limit. Preview changes first, then apply them to update search. Failed or
+the size limit. Overlap must leave room for that heading context. Preview changes first, then apply them to update search. Failed or
 interrupted processing retains the previous searchable revision. Failed uploads
 can be retried or deleted. Processing status is persisted and can be refreshed.
 
@@ -466,7 +466,7 @@ The catalogue, originals, revisions and managed Chroma index live in
 `data/policies/` (relative to `VECTOR_STORE_DIR`'s parent), excluded from Git.
 The existing three PDFs are imported once, preserving their identities and titles.
 Back up this whole directory together. Run one application process: management
-writes and retrieval snapshots use a process-local lock. There is no authentication
+writes are serialized and retrieval snapshots use a short publication lock. There is no authentication
 layer; retain the app's local/internal deployment boundary.
 
 `policy-rag-index` also updates the managed catalogue through the shared extraction
@@ -478,3 +478,7 @@ Management APIs are under `/api/policies`, with operation status at
 Mutations reject cross-origin browser requests; rename/delete/apply check policy
 versions. The existing JSON and streamed question endpoints remain compatible,
 with an additional optional source-location label for HTML/text policies.
+
+OpenAI embeddings use bounded input pieces and requests. Long-chunk vectors are
+combined using length-weighted pooling and normalization; stored chunks and their
+previewed text remain exact. No tokenizer downloads are required.
