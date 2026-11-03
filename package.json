@@ -1,0 +1,12 @@
+{
+  "name": "policy-rag-assistant-local",
+  "private": true,
+  "scripts": {
+    "build": "npm --prefix frontend run build",
+    "dev": "./.venv/bin/uvicorn app.main:app --reload --host 127.0.0.1 --port 8000"
+  },
+  "volta": {
+    "node": "22.23.4",
+    "npm": "10.9.9"
+  }
+}
