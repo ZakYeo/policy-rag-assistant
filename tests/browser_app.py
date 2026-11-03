@@ -5,8 +5,10 @@ import threading
 from dataclasses import asdict
 from tempfile import TemporaryDirectory
 from pathlib import Path
-from app.policies.library import PolicyLibrary
+from app.policies.library import PolicyLibrary, get_library
 from app.policies.routes import library_dependency
+from app.evals.routes import get_store
+from app.evals.demo_store import RunStore
 from app.retrieval.embeddings import LocalHashEmbedder
 
 from fastapi import HTTPException
@@ -31,6 +33,8 @@ def controlled_upsert(chunks):
 
 fixture_library.indexer.upsert_chunks = controlled_upsert
 app = create_app()
+app.dependency_overrides[get_store] = lambda: RunStore(Path(fixture_directory.name) / 'evaluations')
+app.dependency_overrides[get_library] = lambda: fixture_library
 app.dependency_overrides[library_dependency] = lambda: fixture_library
 gates: dict[str, asyncio.Event] = {}
 fixture_response = AssistantResponse(

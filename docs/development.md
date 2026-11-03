@@ -24,6 +24,7 @@ Settings come from environment variables or a root `.env` file. Start with [`.en
 | `DOCUMENTS_DIR` | `documents/` | Seed PDFs imported on first use |
 | `VECTOR_STORE_DIR` | `data/chroma/` | Legacy index location; its parent also holds managed policy data |
 | `RETRIEVAL_TOP_K` | `4` | Default number of retrieved chunks |
+| `EVAL_JUDGE_MODEL` | `gpt-5.4-mini` | Separate judge for the explicit paid [RAG evaluation](evaluation.md) |
 
 - The UI's **Answer style** explicitly selects the answer provider; it starts on OpenAI independently of `ANSWER_PROVIDER`.
 - Selecting direct extracts does not change routing. Use `ROUTER_PROVIDER=heuristic` to avoid OpenAI routing calls.
@@ -68,6 +69,7 @@ With the app running, explore [interactive API documentation](http://localhost:8
 | --- | --- |
 | `GET /` | Question page |
 | `GET /policies` | Policy-management page |
+| `GET /evaluations` | RAG evaluation and judge results |
 | `GET /health` | Health check |
 | `GET /api/status` | Basic status and configured paths |
 | `POST /api/ask` | Answer and evidence as JSON |

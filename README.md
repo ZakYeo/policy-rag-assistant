@@ -9,6 +9,7 @@ A demo internal policy app that answers workplace questions using retrieval-augm
 - **Ask questions:** stream an OpenAI answer or read direct policy extracts, with citations and supporting passages.
 - **Manage policies:** upload PDF, HTML or text files; read, rename and delete policies.
 - **Inspect retrieval:** browse chunks and preview changes to character, sentence, paragraph or HTML-section splitting before applying them.
+- **Evaluate RAG:** explore five questions of increasing complexity, with five RAGAS metrics and a separate LLM judge. See [evaluation details](docs/evaluation.md).
 - **Use any screen:** responsive layouts, light/dark themes and loading skeletons.
 
 The sample corpus covers AI acceptable use, information security and an employee handbook.

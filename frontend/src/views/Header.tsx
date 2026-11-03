@@ -11,8 +11,8 @@ export function Header({ theme, page = "/", navigate }: { theme: ThemeViewModel;
           <span className="text-base text-muted">Policy Desk</span>
         </div>
       </div>
-      <nav aria-label="Main navigation" className="order-3 flex w-full gap-5 text-sm font-semibold min-[960px]:order-none min-[960px]:w-auto">
-        {[["/", "Ask policies"], ["/policies", "Manage policies"]].map(([href, label]) => <a key={href} href={href} aria-current={page === href ? 'page' : undefined} className={`border-b-2 py-1 ${page === href ? 'border-accent text-accent' : 'border-transparent text-muted hover:text-ink'}`} onClick={(event) => { if (navigate && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey && event.button === 0) { event.preventDefault(); navigate(href); } }}>{label}</a>)}
+      <nav aria-label="Main navigation" className="order-3 flex w-full flex-wrap gap-x-4 gap-y-2 text-sm font-semibold min-[960px]:order-none min-[960px]:w-auto">
+        {[["/", "Ask policies"], ["/policies", "Manage policies"], ["/evaluations", "RAG evaluation"]].map(([href, label]) => <a key={href} href={href} aria-current={page === href ? 'page' : undefined} className={`border-b-2 py-1 ${page === href ? 'border-accent text-accent' : 'border-transparent text-muted hover:text-ink'}`} onClick={(event) => { if (navigate && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey && event.button === 0) { event.preventDefault(); navigate(href); } }}>{label}</a>)}
       </nav>
       <div className="flex shrink-0 items-center gap-4">
         <p className="hidden text-sm text-muted min-[1200px]:block">Internal policy guidance for employees</p>
