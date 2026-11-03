@@ -68,7 +68,7 @@ def load_cases(documents_dir: Path):
             raise ValueError(f"Benchmark source changed or missing: {name}. Update reviewed references first.")
         with fitz.open(path) as document:
             pages[name] = [page.get_text() for page in document]
-    return [{**item, "reference_contexts": [
+    return [{**item, "document_pages": {name: len(texts) for name, texts in pages.items()}, "reference_contexts": [
         {"document_name": name, "page_number": number, "text": pages[name][number - 1]}
         for name, number in item["source_pages"]
     ]} for item in CASES]

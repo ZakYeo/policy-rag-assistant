@@ -22,6 +22,7 @@ def get_assistant_service() -> AssistantService:
 
 
 @router.get("/policies", response_class=FileResponse, tags=["web"])
+@router.get("/evaluations", response_class=FileResponse, tags=["web"])
 @router.get("/", response_class=FileResponse, tags=["web"])
 def root() -> FileResponse:
     index = STATIC_DIR / "index.html"

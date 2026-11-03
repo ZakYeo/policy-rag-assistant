@@ -2,6 +2,7 @@
 import asyncio
 import json
 import math
+import re
 from ragas.llms.base import InstructorBaseRagasLLM
 
 RUBRIC_VERSION = "policy-judge-v1"
@@ -68,6 +69,16 @@ def metric_inputs(name, case, answer, contexts):
     return {key: inputs[key] for key in fields[name]}
 
 
+def citation_location_issues(answer, page_counts):
+    """Reject provably impossible benchmark PDF locations; the judge checks semantics."""
+    issues = []
+    for match in re.finditer(r'([\w.-]+\.pdf)[`*]*\s*,\s*\**(?:pages?|p\.)\s*(\d+)(?:\s*[-–]\s*(\d+))?', answer, re.I):
+        name, first, last = match.groups()
+        if name in page_counts and not (1 <= int(first) <= int(last or first) <= page_counts[name]):
+            issues.append(f'{name}: cited page {first}' + (f'-{last}' if last else '') + ' does not exist.')
+    return issues
+
+
 class DemoScorer:
     def __init__(self, llm, embeddings, timeout=120):
         from ragas.metrics import DiscreteMetric
@@ -127,6 +138,10 @@ class DemoScorer:
             else:
                 checks[name] = await self._score(name, metric, {"llm": self.llm, "data": data}, True)
         clarity = await self._score("clarity", self.clarity, {"user_input": case["question"], "response": answer})
+        invalid_locations = citation_location_issues(answer, case.get('document_pages', {}))
+        if invalid_locations:
+            checks['citation_support'] = {'status': 'scored', 'value': 'fail',
+                'reason': 'Deterministic location check: ' + ' '.join(invalid_locations)}
         return {"metrics": scores, "checks": checks, "clarity": clarity}
 
 
