@@ -12,7 +12,7 @@ from app.web.routes import STATIC_DIR
 
 @asynccontextmanager
 async def lifespan(app):
-    get_store().recover()
+    app.dependency_overrides.get(get_store, get_store)().recover()
     yield
 
 

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { evaluationMetadata, evaluationRun } from '../src/test/evaluationFixtures';
+import { evaluationMetadata, evaluationRun, evaluationRow } from '../src/test/evaluationFixtures';
 
 test('shows persisted metrics, explanations, judge evidence and Markdown on refresh', async ({ page }, info) => {
   let starts = 0;
@@ -49,7 +49,7 @@ test('shows a five-answer run with one configuration and five scored samples', a
   const run = {
     ...evaluationRun, progress: 5, total: 5, dataset_version: 'northstar-progressive-5-v2',
     configuration: { ...evaluationRun.configuration, presets: { standard: 4 } },
-    rows: [evaluationRun.rows[0]],
+    rows: [evaluationRow],
     summary: Object.fromEntries(Object.keys(evaluationMetadata.metrics).map(key => [key, {
       standard: 0.8, limited: null, delta: null, sample_count: 5, paired_count: 0, scored_counts: { standard: 5 },
     }])),

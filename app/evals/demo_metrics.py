@@ -3,7 +3,49 @@ import asyncio
 import json
 import math
 import re
+from contextvars import ContextVar
+from hashlib import sha256
 from ragas.llms.base import InstructorBaseRagasLLM
+
+_TRACE = ContextVar('evaluation_metric_trace', default=None)
+
+
+def make_judge(client, model):
+    from ragas.llms import llm_factory
+    llm = llm_factory(model, client=client, max_retries=1)
+    # RAGAS 0.4.3 only detects integer GPT versions, not names such as gpt-5.4-mini.
+    # Pass the documented reasoning-model parameters explicitly for the selected judge.
+    if model.startswith(('gpt-5', 'gpt-6')):
+        llm.model_args.pop('max_tokens', None)
+        llm.model_args.pop('temperature', None)
+        llm.model_args.pop('top_p', None)
+        llm.model_args.update(max_completion_tokens=2048, reasoning_effort='low')
+    else:
+        llm.model_args['max_tokens'] = 2048
+    return llm
+
+
+def provider_failure(exc):
+    """Expose only allowlisted diagnostics, never SDK messages or credentials."""
+    pending, visited = [exc], set()
+    while pending:
+        error = pending.pop()
+        if error is None or id(error) in visited:
+            continue
+        visited.add(id(error))
+        body = getattr(error, 'body', None)
+        if isinstance(body, dict):
+            body = body.get('error', body)
+            if isinstance(body, dict) and (body.get('code') in {'credit_balance_exhausted', 'insufficient_quota'} or body.get('type') == 'insufficient_quota'):
+                return 'Provider credits are exhausted. Evaluation stopped; successful results are retained.'
+        status = getattr(error, 'status_code', None)
+        if status in (401, 403, 404):
+            return 'Provider authentication or model access failed. Evaluation stopped; no model was substituted.'
+        if status == 429:
+            return 'Provider rate limit reached. Evaluation stopped; retry explicitly later.'
+        pending.extend([getattr(error, '__cause__', None), getattr(error, '__context__', None)])
+        pending.extend(getattr(attempt, 'exception', None) for attempt in (getattr(error, 'failed_attempts', None) or []))
+    return None
 
 RUBRIC_VERSION = "policy-judge-v1"
 METRICS = {
@@ -38,12 +80,37 @@ class GuardedLLM(InstructorBaseRagasLLM):
     """Wrap the RAGAS LLM, not the metric calculations."""
     def __init__(self, llm):
         self.llm = llm
+        self.usage = {'calls': 0, 'reported_calls': 0, 'input_tokens': 0, 'output_tokens': 0}
 
     def generate(self, prompt, response_model):
         raise RuntimeError("The evaluation runner uses asynchronous scoring only")
 
     async def agenerate(self, prompt, response_model):
-        return await self.llm.agenerate(GUARD + "\n" + prompt, response_model=response_model)
+        full_prompt = GUARD + "\n" + prompt
+        self.usage['calls'] += 1
+        result = await self.llm.agenerate(full_prompt, response_model=response_model)
+        raw = getattr(result, '_raw_response', None)
+        usage = getattr(raw, 'usage', None)
+        if usage is not None:
+            self.usage['reported_calls'] += 1
+            self.usage['input_tokens'] += usage.prompt_tokens
+            self.usage['output_tokens'] += usage.completion_tokens
+        trace = _TRACE.get()
+        if trace is not None:
+            trace.append({'task': response_model.__name__, 'prompt_sha256': sha256(full_prompt.encode()).hexdigest(),
+                          'output': result.model_dump()})
+        # RAGAS schemas type these as integers, but calculations assume binary judgments.
+        binary = []
+        for field in ('verdict', 'noncommittal'):
+            if hasattr(result, field):
+                binary.append(getattr(result, field))
+        for item in getattr(result, 'statements', []):
+            if hasattr(item, 'verdict'):
+                binary.append(item.verdict)
+        binary.extend(item.attributed for item in getattr(result, 'classifications', []))
+        if any(value not in (0, 1) for value in binary):
+            raise ValueError('Judge returned a non-binary classification')
+        return result
 
 
 def valid_score(name, value):
@@ -88,6 +155,7 @@ class DemoScorer:
         )
         self.llm = GuardedLLM(llm)
         self.timeout = timeout
+        self.provider_issue = None
         self.metrics = {
             "faithfulness": Faithfulness(llm=self.llm),
             "context_precision": ContextPrecision(llm=self.llm),
@@ -102,6 +170,10 @@ class DemoScorer:
         self.clarity.scoring_prompt.instruction += "\nJudge presentation only. Correctness is assessed separately. A concise appropriate abstention can score 5."
 
     async def _score(self, name, metric, inputs, categorical=False):
+        if self.provider_issue:
+            return {'status': 'error', 'value': None, 'reason': self.provider_issue, 'trace': []}
+        trace = []
+        token = _TRACE.set(trace)
         try:
             result = await asyncio.wait_for(metric.ascore(**inputs), timeout=self.timeout)
             value = result.value
@@ -110,10 +182,13 @@ class DemoScorer:
                     raise ValueError("Invalid category")
             else:
                 value = valid_score(name, value)
-            return {"status": "scored", "value": value, "reason": result.reason or ""}
+            return {"status": "scored", "value": value, "reason": result.reason or "", "trace": trace}
         except Exception as exc:
+            self.provider_issue = self.provider_issue or provider_failure(exc)
             # Avoid leaking SDK messages, request headers, or credentials to the UI.
-            return {"status": "error", "value": None, "reason": f"Evaluation failed ({type(exc).__name__})."}
+            return {"status": "error", "value": None, "reason": self.provider_issue or f"Evaluation failed ({type(exc).__name__}).", "trace": trace}
+        finally:
+            _TRACE.reset(token)
 
     async def score(self, case, answer, chunks):
         contexts = [c["text"] for c in chunks]
@@ -142,20 +217,20 @@ class DemoScorer:
         if invalid_locations:
             checks['citation_support'] = {'status': 'scored', 'value': 'fail',
                 'reason': 'Deterministic location check: ' + ' '.join(invalid_locations)}
-        return {"metrics": scores, "checks": checks, "clarity": clarity}
+        return {"metrics": scores, "checks": checks, "clarity": clarity, 'provider_error': self.provider_issue}
 
 
-def summarize(rows):
-    """Paired means only: never compare different successful subsets."""
+def summarize(rows, presets=('standard', 'limited')):
+    """Single-run means or paired comparisons for historical two-preset runs."""
     summary = {}
     for name in METRICS:
         by_preset = {preset: {r["case_id"]: r["metrics"][name]["value"] for r in rows
             if r["preset"] == preset and r.get("metrics", {}).get(name, {}).get("status") == "scored"}
-            for preset in ("standard", "limited")}
-        paired = sorted(by_preset["standard"].keys() & by_preset["limited"].keys())
-        means = {preset: sum(values[id] for id in paired) / len(paired) if paired else None
-                 for preset, values in by_preset.items()}
-        summary[name] = {**means, "paired_count": len(paired),
+            for preset in presets}
+        paired = sorted(set.intersection(*(set(values) for values in by_preset.values())))
+        means = {'standard': None, 'limited': None, **{preset: sum(values[id] for id in paired) / len(paired) if paired else None
+                 for preset, values in by_preset.items()}}
+        summary[name] = {**means, 'sample_count': len(paired), "paired_count": len(paired) if len(presets) == 2 else 0,
                          "scored_counts": {p: len(v) for p, v in by_preset.items()},
-                         "delta": means["standard"] - means["limited"] if paired else None}
+                         "delta": means["standard"] - means["limited"] if paired and len(presets) == 2 else None}
     return summary

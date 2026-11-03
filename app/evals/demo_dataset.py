@@ -4,7 +4,7 @@ from pathlib import Path
 
 import fitz
 
-DATASET_VERSION = "northstar-18-v1"
+DATASET_VERSION = "northstar-progressive-5-v2"
 AI = "northstar-ai-acceptable-use-policy.pdf"
 HR = "northstar-employee-handbook.pdf"
 SEC = "northstar-information-security-policy.pdf"
@@ -20,7 +20,7 @@ def case(id, question, reference, sources, *, group="single-policy", essential="
                 group=group, answerable=group != "unanswerable", essential=essential or reference)
 
 
-CASES = [
+REFERENCE_CASES = [
     case("public-ai", "Can I paste customer data into a public AI tool?",
          "No. Pasting customer data into a public AI tool is prohibited. Sensitive information must not be entered into unapproved AI tools.", [(AI, 1)]),
     case("ai-review", "What checks are required before using AI output externally?",
@@ -60,7 +60,21 @@ CASES = [
 ]
 
 
-def load_cases(documents_dir: Path):
+_by_id = {item['id']: item for item in REFERENCE_CASES}
+CASES = [
+    {**_by_id['core-hours'], 'level': 1, 'complexity': 'Simple lookup'},
+    {**_by_id['public-ai'], 'level': 2, 'complexity': 'Clear policy rule'},
+    {**_by_id['ai-review'], 'level': 3, 'complexity': 'Multiple conditions'},
+    {**_by_id['remote-security'], 'level': 4, 'complexity': 'Cross-policy reasoning'},
+    {**case('remote-ai-incident',
+        'While working remotely, I pasted customer data into unapproved AI. What must I do now, who must I tell, and what safeguards apply before using AI with company data again?',
+        'Report the disclosure immediately through the Security channel and to your manager, even if unsure a breach occurred. Customer data must not be entered into public or unapproved AI tools. Before further use, follow the approved-tool and supplier/security review requirements, use only the minimum necessary data, and redact or anonymise where possible. Restricted information must remain in approved systems with least-privilege access. Remote work requires role suitability and manager approval; maintain confidentiality, approved device/account controls and approved VPN or secure access. Employees remain accountable and must review AI outputs before relying on them.',
+        [(AI, 1), (AI, 2), (SEC, 1), (SEC, 2), (HR, 1), (HR, 2)], group='cross-policy'),
+     'level': 5, 'complexity': 'Complex scenario'},
+]
+
+
+def load_cases(documents_dir: Path, *, include_calibration=False):
     pages = {}
     for name, expected in SOURCE_HASHES.items():
         path = documents_dir / name
@@ -71,4 +85,4 @@ def load_cases(documents_dir: Path):
     return [{**item, "document_pages": {name: len(texts) for name, texts in pages.items()}, "reference_contexts": [
         {"document_name": name, "page_number": number, "text": pages[name][number - 1]}
         for name, number in item["source_pages"]
-    ]} for item in CASES]
+    ]} for item in (REFERENCE_CASES if include_calibration else CASES)]

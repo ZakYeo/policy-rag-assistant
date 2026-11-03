@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     vector_store_dir: Path = BASE_DIR / "data" / "chroma"
     vector_store_collection: str = "policy_chunks"
     retrieval_top_k: int = 4
-    eval_judge_model: str = "gpt-6-astra"
+    eval_judge_model: str = "gpt-5.4-mini"
 
     model_config = SettingsConfigDict(
         env_file=".env",
