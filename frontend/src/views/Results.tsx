@@ -1,6 +1,7 @@
 import type { DeskViewModel } from '../contracts/policy';
 import { Panel } from './Panel';
 import { Skeleton } from './Skeleton';
+import { AnswerText } from './AnswerText';
 
 function Empty({ children }: { children: string }) {
   return <p className="text-muted">{children}</p>;
@@ -13,7 +14,7 @@ export function Results({ vm }: { vm: DeskViewModel }) {
         {vm.submittedQuestion && vm.question.trim() !== vm.submittedQuestion &&
           <p className="mb-4 text-sm text-muted [overflow-wrap:anywhere]">Answer for: {vm.submittedQuestion}</p>}
         {vm.status === 'error' && vm.answer && !vm.response && <p className="mb-4 font-semibold text-error">Incomplete answer — the response was interrupted.</p>}
-        {vm.answer ? <p className="answer-text reveal whitespace-pre-wrap text-[1.3rem] leading-[1.7] font-medium [overflow-wrap:anywhere]">{vm.answer}</p>
+        {vm.answer ? <AnswerText text={vm.answer} extractive={vm.response?.answer_provider === 'extractive'} />
           : vm.busy ? <Skeleton rows={4} /> : <Empty>Ask a question to see guidance from NorthStar’s policies.</Empty>}
         <div className="mt-6 flex items-start gap-2 border-t border-line-subtle pt-4 text-sm text-muted">
           <span aria-hidden="true">ⓘ</span>

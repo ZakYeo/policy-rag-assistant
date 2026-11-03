@@ -1,6 +1,25 @@
 import { expect, test } from '@playwright/test';
 import { answer } from '../src/test/fixtures';
 
+test('formats generated answers safely across desktop and mobile', async ({ page }, info) => {
+  const formatted = { ...answer, answer_provider: 'openai', answer: '**No.** Do not put customer data into a public AI tool.\n\nSee `northstar-ai-acceptable-use-policy.pdf`, **Page 1**.\n\n- Use *approved* tools.\n- <u>Check first</u> before sharing sensitive information.\n\n<img src=x onerror="alert(1)"><script>alert(1)</script>' };
+  await page.route('**/api/ask/stream', (route) => route.fulfill({ contentType: 'text/event-stream', body: `event: delta\ndata: ${JSON.stringify({ text: formatted.answer })}\n\nevent: result\ndata: ${JSON.stringify(formatted)}\n\n` }));
+  await page.goto('/');
+  await page.getByRole('textbox', { name: 'Your question' }).fill('Can I put customer data into a public AI tool?');
+  await page.getByRole('button', { name: 'Ask a question', exact: true }).click();
+  const output = page.locator('.answer-text');
+  await expect(output.locator('strong', { hasText: 'Page 1' })).toBeVisible();
+  await expect(output.locator('code')).toHaveText('northstar-ai-acceptable-use-policy.pdf');
+  await expect(output.locator('em')).toHaveText('approved');
+  await expect(output.locator('u')).toHaveText('Check first');
+  await expect(output.locator('img, script')).toHaveCount(0);
+  for (const width of [1440, 320]) {
+    await page.setViewportSize({ width, height: 1000 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await page.screenshot({ path: info.outputPath(`formatted-${width}.png`), fullPage: true });
+  }
+});
+
 test('responds with real API-shaped evidence and adapts when resized', async ({ page }, info) => {
   const failures: string[] = [];
   page.on('pageerror', (error) => failures.push(error.message));

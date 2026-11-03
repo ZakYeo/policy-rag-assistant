@@ -72,6 +72,16 @@
 
 .skeleton { background: var(--skeleton); animation: skeleton-pulse 1.4s ease-in-out infinite; }
 .reveal { animation: content-reveal 180ms ease-out; }
+.answer-text > * + * { margin-top: 1rem; }
+.answer-text strong { font-weight: 700; }
+.answer-text em { font-style: italic; }
+.answer-text u { text-underline-offset: 0.18em; }
+.answer-text ul { list-style: disc; padding-left: 1.4em; }
+.answer-text ol { list-style: decimal; padding-left: 1.4em; }
+.answer-text li + li, .answer-text li > * + * { margin-top: 0.5rem; }
+.answer-text code { font-family: var(--font-mono); font-size: 0.8em; background: var(--inset); padding: 0.1em 0.3em; border-radius: 0.2rem; }
+.answer-text pre { white-space: pre-wrap; }
+.answer-text blockquote { border-left: 2px solid var(--accent); padding-left: 1rem; }
 /* Keep the question workspace centered. Only use the margin once a whole rail fits. */
 @media (min-width: 1840px) {
   .sample-panel {
