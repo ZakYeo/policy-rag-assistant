@@ -6,6 +6,7 @@ import { Skeleton } from './Skeleton';
 
 const presetLabel = (preset: string) => preset === 'standard' ? 'Standard · 4 passages' : 'Limited · 1 passage';
 const checkLabel = (name: string) => ({ policy_fidelity: 'Policy fidelity', essential_qualifications: 'Essential qualifications', citation_support: 'Citation support', answerability: 'Answerability handling' })[name] || name;
+const checkSummary = (name: string) => ({ policy_fidelity: 'Does the answer follow the policy?', essential_qualifications: 'Are required conditions and exceptions included?', citation_support: 'Do the citations support the claims?', answerability: 'Does the answer stay within the available evidence?' })[name] || name;
 const number = (value: number | null | undefined) => value == null ? '—' : value.toFixed(3);
 const category = (value: string | number | null) => value === 'unable_to_assess' ? 'Unable to assess' : value === 'pass' ? 'Pass' : value === 'fail' ? 'Fail' : value;
 
@@ -60,9 +61,10 @@ export function Evaluation({ vm }: { vm: EvaluationViewModel }) {
     <PageIntro title="RAG evaluation" description="Explore how retrieval and answer quality are measured. Demo evaluations use reviewed questions and a separate LLM judge." />
     <div className="space-y-7">
       <Panel title="Evaluation runs" meta="Demo feature" id="evaluation-runs">
-        <p className="text-muted">Five questions, five answers: progress from a simple policy lookup to a complex cross-policy scenario. Each answer uses up to four retrieved passages and receives all five diagnostic metrics plus judge checks.</p>
+        <p className="text-muted">Five questions, from a simple lookup to a complex scenario.</p>
+        <div className="mt-4 flex flex-wrap gap-2 text-sm">{['5 answers', '5 diagnostic metrics', 'Policy checks + clarity rating'].map(label => <span key={label} className="rounded bg-inset px-3 py-2">{label}</span>)}</div>
         {vm.metadata?.questions && <details className="mt-3 text-sm"><summary>Preview the five questions</summary><ol className="mt-3 list-decimal space-y-2 pl-5">{vm.metadata.questions.map((item) => <li key={item.id}><strong>{item.complexity}:</strong> {item.question}</li>)}</ol></details>}
-        <p className="mt-2 text-sm text-muted">Running an evaluation makes paid answer, judge, and embedding calls using the configured provider account. Normal policy questions do not trigger evaluation.</p>
+
         <div className="mt-5 flex flex-wrap items-end gap-4">
           <button className="primary-button" disabled={vm.starting || vm.active || !metadata?.configured || vm.loading} onClick={() => void vm.start()}>{vm.starting ? 'Starting…' : vm.active ? 'Evaluation in progress' : 'Run evaluation'}</button>
           {vm.runs.length > 0 && <label className="min-w-0 text-sm font-semibold">Saved run
@@ -71,19 +73,34 @@ export function Evaluation({ vm }: { vm: EvaluationViewModel }) {
             </select>
           </label>}
         </div>
+        <p className="mt-3 text-sm text-muted">Run evaluation uses paid API calls. Viewing saved results is free.</p>
         {metadata && !metadata.configured && <p className="mt-3 text-error">Provider credentials are required before running evaluations.</p>}
         {vm.error && <p role="alert" className="mt-3 text-error">{vm.error}</p>}
         {run && <div className="mt-5" aria-live="polite">
           <p className="font-semibold">{run.status} · {run.progress}/{run.total} answer attempts processed</p>
-          <p className="text-sm text-muted">{run.stage}</p>
+          {run.status !== 'completed' && <p className="text-sm text-muted">{run.stage}</p>}
           {['queued', 'running'].includes(run.status) && <progress className="mt-2 w-full" aria-label="Evaluation progress" value={run.progress} max={run.total} />}
           {run.error && <p className="mt-2 text-error">{run.error}</p>}
           {run.status === 'partial' && <p className="mt-2 text-error">Some answers or scores could not be produced. Successful results are retained; missing results are excluded from averages.</p>}
-          <p className="mt-3 text-sm text-muted [overflow-wrap:anywhere]">Answer: <code>{run.configuration.answer_model}</code> · Judge: <code>{run.configuration.judge_model}</code> · RAGAS {run.ragas_version}</p>
-          <p className="text-sm text-muted">{run.configuration.human_calibration}</p>
-          {run.judge_usage && <p className="mt-2 text-sm text-muted">Judge metric calls: {run.judge_usage.calls}. Token usage reported for {run.judge_usage.reported_calls} calls: {run.judge_usage.input_tokens.toLocaleString()} input, {run.judge_usage.output_tokens.toLocaleString()} output.
-            {run.configuration.judge_model.startsWith('gpt-5.4-mini') && run.judge_usage.reported_calls > 0 && <> Uncached-rate estimate for reported judge usage: ${((run.judge_usage.input_tokens * 0.75 + run.judge_usage.output_tokens * 4.5) / 1000000).toFixed(2)}.</>} Excludes answer, routing, embedding and preflight calls; this is not a provider billing total.</p>}
-          <details className="mt-3 text-sm"><summary>Run configuration and versions</summary><pre className="mt-2 whitespace-pre-wrap break-all rounded bg-inset p-3">{JSON.stringify({ dataset: run.dataset_version, rubric: run.rubric_version, configuration: run.configuration }, null, 2)}</pre></details>
+          <dl className="mt-4 grid gap-4 rounded bg-inset p-4 text-sm sm:grid-cols-3">
+            <div><dt className="text-muted">Answer model</dt><dd className="mt-1 break-all font-mono">{run.configuration.answer_model}</dd></div>
+            <div><dt className="text-muted">Judge model</dt><dd className="mt-1 break-all font-mono">{run.configuration.judge_model}</dd></div>
+            <div><dt className="text-muted">Reported judge cost · estimate</dt><dd className="mt-1 font-mono">{run.judge_usage && run.configuration.judge_model.startsWith('gpt-5.4-mini') && run.judge_usage.reported_calls > 0
+              ? `$${((run.judge_usage.input_tokens * 0.75 + run.judge_usage.output_tokens * 4.5) / 1000000).toFixed(2)}` : 'Not available'}</dd><p className="mt-1 text-xs text-muted">Excludes other API usage.</p></div>
+          </dl>
+          <details className="mt-4 text-sm"><summary className="cursor-pointer py-2 font-semibold">Usage and technical details</summary>
+            <p className="mt-3 text-muted">{run.configuration.human_calibration}</p>
+            {run.judge_usage && <>
+              <dl className="my-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
+                <div><dt className="text-muted">Judge calls</dt><dd className="font-mono">{run.judge_usage.calls}</dd></div>
+                <div><dt className="text-muted">Calls with usage</dt><dd className="font-mono">{run.judge_usage.reported_calls}</dd></div>
+                <div><dt className="text-muted">Input tokens</dt><dd className="font-mono">{run.judge_usage.input_tokens.toLocaleString()}</dd></div>
+                <div><dt className="text-muted">Output tokens</dt><dd className="font-mono">{run.judge_usage.output_tokens.toLocaleString()}</dd></div>
+              </dl>
+              <p className="text-muted">Estimate uses uncached rates for reported judge tokens. Excludes answer, routing, embedding, preflight and unreported calls; this is not a provider billing total.</p>
+            </>}
+            <details className="mt-3"><summary className="cursor-pointer py-2">Run configuration and versions</summary><pre className="mt-2 whitespace-pre-wrap break-all rounded bg-inset p-3">{JSON.stringify({ ragas: run.ragas_version, dataset: run.dataset_version, rubric: run.rubric_version, configuration: run.configuration }, null, 2)}</pre></details>
+          </details>
         </div>}
         {!vm.loading && !run && !vm.error && <p className="mt-5 text-muted">No saved evaluations yet. Run the benchmark to see real results.</p>}
       </Panel>
@@ -92,7 +109,7 @@ export function Evaluation({ vm }: { vm: EvaluationViewModel }) {
         <section aria-labelledby="diagnostics-heading">
           <h2 id="diagnostics-heading" className="mb-2 text-xl font-bold">Diagnostic metrics</h2>
           <p className="mb-5 text-muted">Scores are evaluation measurements, not percentages of accuracy. {comparison ? 'This historical comparison uses only questions successfully scored in both presets.' : 'Averages include only successfully scored questions; five questions demonstrate the method, not statistical proof of overall accuracy.'} Higher is better for each metric.</p>
-          <div className="grid gap-5 min-[800px]:grid-cols-2">{Object.entries(metadata.metrics).map(([key, metric]) => {
+          <div className="grid items-start gap-5 min-[800px]:grid-cols-2">{Object.entries(metadata.metrics).map(([key, metric]) => {
             const result = run?.summary[key];
             return <Panel key={key} title={metric.label} meta={`Scale ${metric.range[0]} to ${metric.range[1]}`} id={`metric-${key}`}>
               <p>{metric.explanation}</p>
@@ -103,31 +120,79 @@ export function Evaluation({ vm }: { vm: EvaluationViewModel }) {
                 : <p className="text-sm text-muted">{result?.scored_counts.standard ?? 0}/{metadata.eligible_count} questions scored</p>}
               <p className="mt-1 text-sm text-muted">Missing scores are excluded, never treated as zero.{comparison && ` Scored individually: standard ${result?.scored_counts.standard ?? 0}, limited ${result?.scored_counts.limited ?? 0}.`}</p>
               <div className="mt-4 space-y-2 border-t border-line pt-3 text-sm"><p><strong>Higher:</strong> {metric.higher}</p><p><strong>Lower:</strong> {metric.lower}</p></div>
+              <details className="mt-4 border-t border-line pt-2">
+                <summary className="cursor-pointer py-2 text-sm font-semibold">Question breakdown · {questions.length} questions</summary>
+                <div className="mt-2 space-y-3">{questions.map((question, index) => <div key={question.case_id} className="rounded border border-line p-3">
+                  <p className="text-sm font-semibold">{index + 1}. {question.question}</p>
+                  {presets.map(preset => {
+                    const row = rows.find(item => item.case_id === question.case_id && item.preset === preset);
+                    const score = row?.metrics[key];
+                    return <div key={preset} className="mt-3 text-sm">
+                      <div className="flex flex-wrap items-center justify-between gap-2"><span className="text-muted">{presetLabel(preset)}</span><strong className="font-mono"><Score score={score} /></strong></div>
+                      {score?.reason && <p className="mt-2 text-muted">{score.reason}</p>}
+                      {row && <details className="mt-2"><summary className="cursor-pointer py-2 text-accent">View answer and evidence</summary>
+                        <div className="mt-2 rounded bg-inset p-3">{row.answer ? <AnswerText text={row.answer} /> : <p>No answer available.</p>}</div>
+                        {row.error && <p className="mt-2 text-error">{row.error}</p>}
+                        <details className="mt-2"><summary className="cursor-pointer py-2">Reviewed reference</summary><p className="mt-2">{row.reference}</p></details>
+                        <details className="mt-2"><summary className="cursor-pointer py-2">Retrieved passages ({row.chunks.length})</summary><Passages items={row.chunks} /></details>
+                        {score?.trace?.length ? <details className="mt-2"><summary className="cursor-pointer py-2">Judge calculation evidence</summary><pre className="whitespace-pre-wrap break-all rounded bg-inset p-3">{JSON.stringify(score.trace, null, 2)}</pre></details> : null}
+                      </details>}
+                    </div>;
+                  })}
+                </div>)}{!questions.length && <p className="text-sm text-muted">Question results will appear as the run progresses.</p>}</div>
+              </details>
             </Panel>;
           })}</div>
         </section>
         <Panel title="LLM judge — automated assessment" meta="Policy checks + presentation" id="judge-heading">
-          <p className="text-muted">Each critical requirement is assessed separately. Pass means the criterion was met; Fail means it was not. Unable to assess means the evaluation evidence was insufficient. A high presentation score cannot cancel a failed policy check.</p>
-          <p className="mt-2 text-sm text-muted">Judges can be wrong. Using a separate model does not establish independence or human-level accuracy. Review the evidence and explanations below.</p>
+          <p className="text-muted">Four policy checks for every answer, plus a separate rating for presentation.</p>
+          <details className="mt-3 text-sm"><summary className="cursor-pointer py-2 font-semibold">How to read judge results</summary>
+            <dl className="mt-3 grid gap-3 sm:grid-cols-3"><div><dt className="font-semibold">Pass</dt><dd className="text-muted">The criterion was met.</dd></div><div><dt className="font-semibold">Fail</dt><dd className="text-muted">The criterion was not met.</dd></div><div><dt className="font-semibold">Unable to assess</dt><dd className="text-muted">Evidence was insufficient to judge.</dd></div></dl>
+            <p className="mt-3 text-muted">A high presentation score cannot cancel a failed policy check. Judges can be wrong; a separate model does not establish independence or human-level accuracy.</p>
+          </details>
           {metadata.calibration && <details className="mt-4 rounded border border-line p-4">
             <summary>Developer challenge checks: {metadata.calibration.results.filter((item) => item.agrees).length}/{metadata.calibration.results.length} agree with provisional labels</summary>
             <p className="mt-2 text-sm text-muted">{metadata.calibration.label_status} These separate challenge examples are excluded from benchmark scores. Judge: {metadata.calibration.judge_model} · {new Date(metadata.calibration.created_at).toLocaleString()}.</p>
             <ul className="mt-3 space-y-3 text-sm">{metadata.calibration.results.map((item) => <li key={item.id}><strong>{item.id}</strong>: expected {item.expected}; actual {item.status === 'scored' ? category(item.value) : 'Evaluation error'}.<p className="text-muted">{item.reason}</p></li>)}</ul>
           </details>}
           <div className="mt-5 grid gap-5 min-[800px]:grid-cols-2">{Object.entries(metadata.checks).map(([key, description]) => <div key={key} className="rounded border border-line p-4">
-            <h3 className="font-semibold">{checkLabel(key)}</h3><p className="mt-1 text-sm text-muted">{description}</p>
+            <h3 className="font-semibold">{checkLabel(key)}</h3><p className="mt-1 text-sm text-muted">{checkSummary(key)}</p>
             {presets.map((preset) => {
               const values = rows.filter((r) => r.preset === preset).map((r) => r.checks[key]);
               const counts = (value: string) => values.filter((v) => v?.status === 'scored' && v.value === value).length;
               const skipped = values.filter((v) => v?.status === 'not_applicable').length;
               const missing = values.filter((v) => !v || v.status === 'error').length;
-              return <p key={preset} className="mt-3 text-sm"><strong>{presetLabel(preset)}:</strong> {counts('pass')} pass · {counts('fail')} fail · {counts('unable_to_assess')} unable to assess · {skipped} not applicable · {missing} missing/error ({values.length}/{metadata.case_count} results)</p>;
+              return <div key={preset} className="mt-4">
+                {comparison && <p className="mb-2 text-sm text-muted">{presetLabel(preset)}</p>}
+                <dl className="grid grid-cols-2 gap-3">
+                  <div className="rounded bg-inset p-3"><dt className="text-sm text-muted">Pass</dt><dd className="mt-1 font-mono text-2xl">{counts('pass')}</dd></div>
+                  <div className="rounded border border-line p-3"><dt className="text-sm text-muted">Fail</dt><dd className={`mt-1 font-mono text-2xl ${counts('fail') ? 'text-error' : ''}`}>{counts('fail')}</dd></div>
+                </dl>
+                <p className="mt-2 text-xs text-muted">{values.length}/{metadata.case_count} results
+                  {counts('unable_to_assess') > 0 && ` · ${counts('unable_to_assess')} unable to assess`}
+                  {skipped > 0 && ` · ${skipped} not applicable`}{missing > 0 && ` · ${missing} missing/error`}</p>
+              </div>;
             })}
+            <details className="mt-3 text-sm"><summary className="cursor-pointer py-2 font-semibold">Criterion and question results</summary>
+              <p className="mt-2 text-muted">{description}</p>
+              <ul className="mt-3 divide-y divide-line">{rows.map(row => <li key={`${row.case_id}-${row.preset}`} className="py-3">
+                <p className="font-semibold">{row.question}</p>
+                <p className="mt-1"><Score score={row.checks[key]} />{comparison && ` · ${presetLabel(row.preset)}`}</p>
+                <p className="mt-1 text-muted">{row.checks[key]?.reason || 'No judgment available.'}</p>
+              </li>)}</ul>
+            </details>
           </div>)}</div>
           <h3 className="mt-6 font-semibold">Clarity and usefulness · 1–5 rubric</h3>
-          <p className="mt-1 text-sm text-muted">Higher means clearer, more usable presentation. This is not a correctness score. We show the distribution rather than interpreting ordinal ratings as percentages.</p>
-          <ol className="mt-3 list-decimal space-y-1 pl-5 text-sm">{Object.values(metadata.clarity_rubric).map((description) => <li key={description}>{description}</li>)}</ol>
-          {presets.map((preset) => <p key={preset} className="mt-3 text-sm"><strong>{presetLabel(preset)}:</strong> {[1, 2, 3, 4, 5].map((score) => `${score}/5: ${rows.filter((r) => r.preset === preset && r.clarity?.status === 'scored' && r.clarity.value === score).length}`).join(' · ')} · {rows.filter((r) => r.preset === preset && r.clarity?.status === 'scored').length}/{metadata.case_count} rated</p>)}
+          <p className="mt-1 text-sm text-muted">Higher means clearer and more usable. Presentation only; not a correctness score.</p>
+          {presets.map(preset => <div key={preset} className="mt-4">
+            {comparison && <p className="mb-2 text-sm text-muted">{presetLabel(preset)}</p>}
+            <dl className="grid grid-cols-5 gap-2">{[1, 2, 3, 4, 5].map(score => {
+              const count = rows.filter(row => row.preset === preset && row.clarity?.status === 'scored' && row.clarity.value === score).length;
+              return <div key={score} className={`rounded border border-line p-2 text-center sm:p-4 ${count ? 'bg-inset' : ''}`}><dt className="text-sm text-muted">{score}/5</dt><dd className="mt-2 font-mono text-xl">{count}<span className="mt-1 block font-sans text-xs text-muted">{count === 1 ? 'answer' : 'answers'}</span></dd></div>;
+            })}</dl>
+            <p className="mt-2 text-xs text-muted">{rows.filter(row => row.preset === preset && row.clarity?.status === 'scored').length}/{metadata.case_count} answers rated</p>
+          </div>)}
+          <details className="mt-4 text-sm"><summary className="cursor-pointer py-2 font-semibold">View the 1–5 rating rubric</summary><ol className="mt-3 list-decimal space-y-2 pl-5">{Object.values(metadata.clarity_rubric).map(description => <li key={description}>{description}</li>)}</ol></details>
         </Panel>
         <Panel title="Question results" meta={`${questions.length}/${metadata.case_count} questions`} id="question-results">
           <p className="mb-4 text-muted">Inspect each answer alongside its reviewed reference and the evidence actually retrieved. Judge explanations are automated assessments.</p>
